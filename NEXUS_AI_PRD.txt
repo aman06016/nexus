@@ -1,0 +1,595 @@
+
+
+
+NEXUS AI
+Real-Time AI Intelligence Platform
+
+PRODUCT REQUIREMENTS DOCUMENT
+Advanced AI News Aggregation & Scraping Engine
+
+Version
+1.0 — Initial Release
+Date
+March 2026
+Status
+Ready for Development
+Classification
+Confidential
+Stack
+Java/Spring · MongoDB · Next.js
+
+
+
+
+
+1. EXECUTIVE SUMMARY
+
+NEXUS AI is a next-generation, dark-mode AI news aggregation platform powered by a high-performance scraping engine that continuously harvests the latest developments across the artificial intelligence ecosystem. The platform aggregates AI news, product launches, LLM model releases, startup funding rounds, and monetization stories from across the internet every 2 minutes — delivering a Bloomberg Terminal-grade experience for the AI community.
+
+1.1 Vision
+To become the definitive real-time intelligence hub for AI professionals, developers, investors, and enthusiasts — the first screen they check every morning and the last before bed.
+
+1.2 Core Value Proposition
+	•	Live 2-minute news refresh cycle with intelligent deduplication
+	•	Coverage spanning Google DeepMind, Anthropic, OpenAI, Meta AI, Amazon, DeepSeek, Mistral, xAI, Cohere, and emerging startups
+	•	Monetization intelligence: stories about developers/founders earning with LLMs
+	•	Personalized feeds, bookmarks, trending signals, and social engagement (likes, shares)
+	•	Beautiful dark-mode UI inspired by the best of Linear, Vercel, and Notion
+
+1.3 Success Metrics
+Metric
+Target
+Daily Active Users
+10,000 DAU within 3 months of launch
+Return Rate
+> 60% weekly retention
+Scraping Uptime
+> 99.5% availability
+Scrape Latency
+< 30s end-to-end from publish to display
+Content Volume
+> 500 unique articles indexed per day
+Engagement
+> 3 likes/saves per active user per session
+
+
+2. TARGET AUDIENCE & USER PERSONAS
+
+2.1 Primary Personas
+
+Persona
+Profile
+Behavior
+The AI Builder
+The Investor
+The Enthusiast
+Software engineer building apps on top of LLMs. Needs to track model updates, API changes, new SDKs.
+VC / Angel tracking the AI startup space. Needs funding news, pivots, competitive intel.
+Tech-savvy professional following AI trends for career growth & curiosity.
+Visits 3–5x/day
+Visits 1x/day, deep-reads
+Visits 2x/day on mobile
+
+2.2 Secondary Personas
+	•	AI Startup Founders — tracking competitors and market narratives
+	•	Journalists & Researchers — using the platform as a structured primary source
+	•	Product Managers — monitoring AI tool landscape for integration opportunities
+
+
+3. TECHNOLOGY STACK
+
+Layer
+Technology
+Rationale
+Backend Framework
+Java 21 + Spring Boot 3.x
+Reactive WebFlux for high-concurrency scraping
+Database
+MongoDB Atlas
+Flexible schema for heterogeneous news docs
+Caching Layer
+Redis
+Hot article caching, rate limiting, session store
+Message Queue
+Apache Kafka
+Decoupled scraping → processing pipeline
+Search Engine
+Elasticsearch 8.x
+Full-text search, faceting, relevance scoring
+Frontend
+Next.js 14 (App Router)
+SSR + ISR for SEO + real-time hydration
+UI Library
+Tailwind CSS + shadcn/ui
+Dark-mode first, utility-first styling
+Real-time
+WebSocket (STOMP/Spring)
+Push notifications for breaking news
+Auth
+Spring Security + JWT + OAuth2
+Google, GitHub, LinkedIn SSO
+Storage
+AWS S3
+Thumbnail caching, article screenshots
+Scheduler
+Quartz Scheduler (Spring)
+Cron jobs every 2 minutes per source
+Monitoring
+Prometheus + Grafana
+Scrape health dashboards, alerts
+CI/CD
+GitHub Actions + Docker + K8s
+Blue-green deployments
+API Gateway
+Spring Cloud Gateway
+Rate limiting, auth, routing
+
+
+4. ADVANCED SCRAPING ENGINE
+
+The scraping engine is the core competitive moat of NEXUS AI. It is a distributed, fault-tolerant, multi-source ingestion pipeline capable of processing hundreds of sources simultaneously with a 2-minute refresh cycle.
+
+4.1 Architecture Overview
+FLOW
+Source Registry → Scheduler → Scraper Workers (Kafka) → Content Extractor → Deduplicator → Enrichment Engine → MongoDB → Elasticsearch Index → WebSocket Broadcast
+
+4.2 Source Categories & Target URLs
+Category
+Sources
+Tier 1 — Company Blogs
+blog.google, anthropic.com/news, openai.com/blog, ai.meta.com/blog, aws.amazon.com/blogs/machine-learning, deepseek.com/blog
+Tier 1 — Research Papers
+arxiv.org (cs.AI, cs.LG, cs.CL), papers.nips.cc, proceedings.mlr.press
+Tier 2 — Tech News
+techcrunch.com, wired.com, venturebeat.com, theregister.com, zdnet.com
+Tier 2 — Newsletters
+importai.substack.com, aisnakeoil.substack.com, thesequence.substack.com
+Tier 3 — Social Signals
+X/Twitter AI accounts, LinkedIn AI influencers, Reddit r/MachineLearning, HackerNews AI posts
+Tier 4 — Monetization
+Indie Hackers AI projects, Product Hunt AI launches, SideProjectors, MicroAcquire AI listings
+Tier 4 — Startups
+Crunchbase AI funding, Y Combinator batches, a16z portfolio, Sequoia AI portfolio
+
+4.3 Scraping Worker Design
+4.3.1 Worker Pool Architecture
+	•	Spring @Scheduled triggers Quartz jobs every 2 minutes per source group
+	•	Each source assigned to a Kafka topic partition — parallel processing
+	•	Playwright-based headless browser workers for JavaScript-rendered pages (SPA sites)
+	•	Lightweight Jsoup workers for static HTML sources (faster, lower resource)
+	•	Auto-detection: if Jsoup fetch returns minimal content, escalate to Playwright
+
+4.3.2 Intelligent Rate Limiting & Anti-Detection
+	•	Per-domain rate limiting with exponential backoff on 429/503 responses
+	•	Rotating residential proxy pool integration (BrightData / Oxylabs)
+	•	User-agent rotation from a curated pool of 200+ real browser signatures
+	•	Random delay jitter (500ms–3000ms) between requests per domain
+	•	Cookie jar management per domain session
+	•	CAPTCHA detection with automatic proxy rotation on trigger
+
+4.3.3 Content Extraction Pipeline
+	•	Mozilla Readability (via GraalVM JS) for article body extraction
+	•	OpenGraph / Schema.org metadata parsing for title, image, author, published date
+	•	Named Entity Recognition (NER) using Stanford CoreNLP to tag companies, people, products
+	•	Keyword extraction using TF-IDF against AI domain vocabulary
+	•	Language detection — English-only by default with multilingual flag support
+	•	Toxicity/spam scoring to filter low-quality content
+
+4.3.4 Deduplication Engine
+	•	SHA-256 fingerprint on normalized URL (strip UTM params, lowercase)
+	•	SimHash-based near-duplicate detection for articles with different URLs but identical content (>85% similarity threshold)
+	•	Redis bloom filter for O(1) URL seen-check before heavy processing
+	•	Cross-source deduplication: same story from TechCrunch + Wired merged with canonical pointing to original source
+
+4.4 AI Enrichment Layer
+	•	Category tagging: Model Release, Funding, Open Source, Research, Product Launch, Monetization Story, Regulation
+	•	Company tagging: Automatic extraction and normalization to canonical company names
+	•	Sentiment scoring: Bullish / Neutral / Bearish for startup/market stories
+	•	Impact score (0–100): Algorithmic scoring based on source authority, social signals, novelty
+	•	Summary generation: GPT-4o / Claude Haiku API for 2-sentence TLDR per article
+	•	Embedding generation: OpenAI text-embedding-3-small for semantic search and related articles
+
+4.5 Scrape Health & Monitoring
+	•	Grafana dashboard per source: success rate, last success timestamp, avg latency, articles/hour
+	•	PagerDuty alerts when source fails for > 10 minutes
+	•	Dead letter queue (Kafka DLQ) for failed scrape jobs with retry policy
+	•	Admin panel: manually trigger re-scrape, pause/resume sources, view raw HTML
+
+
+5. BACKEND ARCHITECTURE
+
+5.1 Microservice Breakdown
+Service
+Responsibility
+scraper-service
+Quartz-powered worker pool. Produces raw article events to Kafka. Manages proxy rotation, rate limits.
+ingestion-service
+Consumes Kafka events. Runs extraction, NER, dedup, enrichment. Writes to MongoDB + Elasticsearch.
+api-service
+Spring Boot REST API. Serves articles, search, user data. Spring Security JWT auth.
+notification-service
+WebSocket server (STOMP). Pushes breaking news to connected clients in real-time.
+user-service
+Profile management, preferences, saved articles, follow lists, notification settings.
+analytics-service
+Tracks views, likes, shares. Computes trending scores. Feeds recommendation engine.
+admin-service
+Internal dashboard for scrape management, content moderation, source configuration.
+gateway-service
+Spring Cloud Gateway. Auth filter, rate limiting (Redis), request routing.
+
+5.2 MongoDB Schema Design
+5.2.1 Articles Collection
+articles
+{ _id, url, canonicalUrl, title, summary, fullText, author, publishedAt, scrapedAt, source { name, domain, tier }, companies[], tags[], category, sentiment, impactScore, thumbnail, embedding[], stats { views, likes, saves, shares }, status, lang, duplicateOf }
+
+5.2.2 Users Collection
+users
+{ _id, email, username, avatar, bio, joinedAt, role, preferences { categories[], companies[], emailDigest, pushNotifications }, stats { articlesRead, likesGiven, savedCount }, oauthProviders[], lastSeen }
+
+5.2.3 Interactions Collection
+interactions
+{ _id, userId, articleId, type: LIKE|SAVE|SHARE|VIEW|CLICK, timestamp, sessionId }
+
+5.2.4 Sources Collection
+sources
+{ _id, name, domain, tier, type: RSS|HTML|API|SOCIAL, scrapeConfig { url, interval, selector, type }, status, lastSuccess, successRate, articlesPerDay }
+
+5.3 Trending Algorithm
+Formula
+TrendScore = (likes × 3 + views × 1 + saves × 5 + shares × 4) × DecayFactor(publishedAt) × SourceAuthority × NoveltBonus
+The decay factor applies exponential time decay with a 6-hour half-life, ensuring fresh content always surfaces. The novelty bonus rewards articles about genuinely new topics not seen in the past 48 hours, calculated using embedding cosine similarity against recent corpus.
+
+5.4 REST API Design
+Endpoint
+Description
+GET /api/v1/articles
+Paginated article feed. Params: filter, category, company, sort(latest|trending|top), page, limit
+GET /api/v1/articles/:id
+Full article detail with related articles (semantic similarity)
+GET /api/v1/search?q=
+Elasticsearch full-text search. Supports filters, date range, company, category
+POST /api/v1/articles/:id/like
+Toggle like. Returns updated like count. Rate limited to prevent abuse.
+POST /api/v1/articles/:id/save
+Save to user's reading list. Returns saved status.
+GET /api/v1/trending
+Top 20 trending articles computed in last 2 hours
+GET /api/v1/feed/personalized
+ML-ranked feed based on user interaction history
+GET /api/v1/companies/:slug/articles
+All articles tagged to a specific company
+GET /api/v1/users/me
+Current user profile, preferences, stats
+PUT /api/v1/users/me/preferences
+Update category/company follow list, notification settings
+GET /api/v1/digest/daily
+Curated top-10 digest for the day
+WebSocket /ws/news
+STOMP subscription. Push breaking news in real-time
+
+
+6. FRONTEND — DARK MODE UI
+
+6.1 Design System
+Token
+Value
+Background Primary
+#0D0D1A — near-black navy
+Background Secondary
+#1A1A2E — card/panel bg
+Background Tertiary
+#16213E — elevated surface
+Accent Primary
+#6C63FF — electric purple
+Accent Secondary
+#00D4FF — cyan highlight
+Accent Danger
+#FF4757 — alert/error red
+Accent Success
+#2ED573 — positive/up
+Text Primary
+#EAEAF5 — near-white
+Text Secondary
+#9999BB — muted
+Text Tertiary
+#55557A — disabled/placeholder
+Border
+#2A2A4A — subtle divider
+Typography
+Inter for UI + JetBrains Mono for code/timestamps
+Corner Radius
+12px cards, 8px buttons, 6px tags
+Shadow
+0 4px 24px rgba(108,99,255,0.15) on hover
+
+6.2 Page Architecture (Next.js App Router)
+Route
+Description
+/
+Home feed — Latest tab active by default
+/trending
+Trending articles sorted by TrendScore
+/saved
+User's saved/bookmarked articles (auth required)
+/search?q=
+Full-text search results page with filters
+/article/[slug]
+L2 Article Detail Page — full content, related, comments
+/company/[slug]
+Company hub page — all news for one company
+/category/[slug]
+Category feed — Model Releases, Funding, etc.
+/profile
+User profile — reading history, likes, stats
+/settings
+Preferences, notification settings, followed companies
+/digest
+Daily AI digest — curated top 10
+/admin
+Internal admin — source management, content moderation
+
+6.3 L1 — Feed Page (Homepage)
+Top Navigation Bar (Sticky)
+	•	Left: NEXUS AI logo with animated gradient on hover
+	•	Center: Search bar (full-width on focus) with real-time autocomplete suggestions
+	•	Right: Notification bell with live badge, user avatar with dropdown (Profile, Settings, Logout)
+
+Sub-Navigation Tabs (Below Header)
+	•	Latest | Trending | Saved | For You (personalized) | Digest
+	•	Tab pill indicator with smooth sliding animation
+	•	Company quick-filters below tabs: [All] [Google] [Anthropic] [OpenAI] [Meta] [Amazon] [DeepSeek] [Startups] [Monetization]
+
+Article Card Component
+	•	Dark glassmorphism card: backdrop-blur + rgba border
+	•	Thumbnail (16:9) with company logo badge overlay (top-left)
+	•	Category tag pill (color-coded per category)
+	•	Title (2-line clamp, 18px bold)
+	•	2-sentence AI-generated TLDR in muted text
+	•	Bottom bar: Source logo + name, time-ago timestamp, Impact Score badge
+	•	Action row: Like button (heart, animated fill on click + count), Save button (bookmark), Share button, More (...)
+	•	Hover state: purple shadow glow + slight scale(1.02) transform
+	•	Breaking news badge: pulsing red dot for articles < 30 minutes old
+
+Feed Layout
+	•	Featured Hero card: top article of the hour in full-width card with large thumbnail
+	•	3-column responsive grid below hero (2-col tablet, 1-col mobile)
+	•	Infinite scroll with intersection observer — loads next 20 articles
+	•	Live ticker at very top: scrolling horizontal latest headlines with real-time WebSocket updates
+
+6.4 L2 — Article Detail Page
+	•	Full-bleed hero image with gradient overlay
+	•	Breadcrumb: Home > Category > Article Title
+	•	Author chip with company logo + published timestamp
+	•	Reading time estimate (words / 200 WPM)
+	•	Article body: rendered Markdown/HTML with syntax highlighting for code blocks
+	•	Floating sidebar (desktop): Table of Contents auto-generated from H2/H3 tags
+	•	Key Entities sidebar: companies mentioned, people tagged (clickable to their hub pages)
+	•	Like / Save / Share CTA bar pinned at bottom on scroll
+	•	Related Articles: 4-card horizontal scroll — semantically similar articles (embedding distance)
+	•	Company spotlight widget: if article mentions OpenAI, show recent OpenAI news sidebar
+	•	Read next: Auto-advance to next article after scroll-to-end (opt-in setting)
+
+6.5 Search Experience
+	•	Unified search bar: full-text + entity search (search 'GPT-5' finds all articles tagging GPT-5)
+	•	Instant results dropdown: top 5 results appear as user types (debounced 300ms, Elasticsearch)
+	•	Search page: faceted filters — Date Range, Category, Company, Sentiment, Source
+	•	Highlighted query matches in result snippets
+	•	'Did you mean?' spell correction via Elasticsearch fuzzy
+	•	Empty state: trending searches + suggested company links
+
+6.6 User Profile Page
+	•	Avatar with upload support + generated gradient fallback
+	•	Stats strip: Articles Read, Likes Given, Saved Articles, Member Since
+	•	Activity heatmap (GitHub-style contribution graph) showing daily reading activity
+	•	Recently read articles list
+	•	Liked articles grid
+	•	Reading streak: current streak + longest streak with fire emoji milestone badges
+	•	AI Usage Badge: badge if user follows 5+ AI companies
+
+6.7 Additional Frontend Features
+Real-Time Breaking News
+	•	WebSocket connection on page load — server pushes new articles as they're scraped
+	•	Toast notification slides in from bottom-right: 'Breaking: [Title] — View'
+	•	News ticker at top of page updates live
+
+Daily Digest Page
+	•	Curated top-10 stories of the day, selected by impact score + category balance
+	•	Email subscription for daily digest at 8am user's timezone
+	•	PDF export option for digest
+
+Company Hub Pages
+	•	Dedicated page per company (Google, Anthropic, OpenAI, etc.)
+	•	Company logo + description + market stats (pulled from Crunchbase API if available)
+	•	Timeline view of all articles chronologically
+	•	Follow button — adds company to user's personalized feed
+	•	Funding/valuation timeline widget for startups
+
+Keyboard Shortcuts
+	•	J/K — next/prev article in feed
+	•	L — like current article
+	•	S — save current article
+	•	/ — focus search bar
+	•	G+H — go home, G+T — go trending, G+S — go saved
+
+Dark Mode Customization
+	•	Three theme variants: Midnight (deepest dark), Dusk (warm dark), Dim (softer dark)
+	•	Font size slider: Compact / Default / Comfortable / Large
+	•	Article density: Card view (default) / List view / Magazine view
+
+
+7. COMPLETE FEATURE REGISTRY
+
+7.1 Core Features — P0 (Must Have for Launch)
+ID
+Feature
+F-001
+2-minute cron scraping engine with Quartz + Kafka pipeline
+F-002
+Multi-source scraping: 50+ sources across Tier 1–4
+F-003
+Article deduplication (URL hash + SimHash near-duplicate)
+F-004
+Dark mode UI — Midnight theme
+F-005
+Latest feed with infinite scroll
+F-006
+Trending feed with TrendScore algorithm
+F-007
+Like button on every article card (animated, persisted)
+F-008
+Save / Bookmark articles to reading list
+F-009
+L1 article card + L2 article detail page
+F-010
+Top sticky nav with global search bar
+F-011
+Company quick-filter tabs (Google, Anthropic, OpenAI, Meta...)
+F-012
+Category tags (Model Release, Funding, Open Source, Research, Monetization)
+F-013
+User authentication (email/password + Google OAuth)
+F-014
+User profile page with stats
+F-015
+Elasticsearch full-text search with highlighted results
+F-016
+Real-time WebSocket breaking news toasts
+F-017
+AI-generated 2-sentence TLDR per article
+F-018
+Related articles (semantic similarity)
+F-019
+Admin panel: source management, scrape health dashboard
+F-020
+Mobile responsive (iOS/Android browsers)
+
+7.2 Enhanced Features — P1 (Post-Launch Sprint 2)
+ID
+Feature
+F-021
+Personalized 'For You' feed based on interaction history
+F-022
+Company Hub pages with follow functionality
+F-023
+Daily AI Digest email + digest page
+F-024
+Activity heatmap on user profile
+F-025
+Three dark theme variants (Midnight, Dusk, Dim)
+F-026
+Keyboard shortcuts navigation
+F-027
+Reading streak with badges
+F-028
+Share to X/Twitter/LinkedIn with pre-filled text
+F-029
+Impact Score display on each article
+F-030
+News live ticker at page top
+F-031
+Category hub pages
+F-032
+Startup funding tracker with timeline
+F-033
+PDF digest export
+F-034
+GitHub OAuth login
+F-035
+Push notifications (browser)
+
+7.3 Stretch Features — P2 (Future Roadmap)
+ID
+Feature
+F-036
+AI-powered weekly market intelligence report (PDF)
+F-037
+Chrome extension for quick saves from any webpage
+F-038
+Slack/Discord bot integration for team feeds
+F-039
+API access (paid tier) for developer consumption
+F-040
+Comments system with upvotes
+F-041
+Follow specific researchers/authors
+F-042
+Portfolio tracker: monitor companies in your watchlist
+F-043
+Mobile app (React Native, reuses API)
+F-044
+Premium tier with ad-free + exclusive deep-dives
+F-045
+LLM-generated weekly company intelligence reports
+
+
+8. NON-FUNCTIONAL REQUIREMENTS
+
+Area
+Requirement
+Performance
+API p95 latency < 200ms; Feed page LCP < 2.0s; Scraping pipeline end-to-end < 30s
+Scalability
+Horizontal scaling of scraper workers via K8s HPA; MongoDB sharding on articleId
+Availability
+99.5% uptime SLA; Multi-AZ deployment on AWS; Circuit breakers on all external calls
+Security
+JWT tokens with 15min expiry + refresh tokens; Rate limiting on all public endpoints (100 req/min/IP); OWASP Top 10 mitigated
+Data Freshness
+Articles must appear in feed within 2 minutes of being published at source
+SEO
+Next.js SSR for article pages; Open Graph tags; Sitemap auto-generated; Structured data (JSON-LD)
+Accessibility
+WCAG 2.1 AA compliance; Keyboard fully navigable; Screen reader compatible
+Compliance
+GDPR: Right to deletion, data export; Cookie consent banner; Privacy policy
+Observability
+Distributed tracing (OpenTelemetry + Jaeger); Centralized logging (ELK stack); Metrics (Prometheus/Grafana)
+Content Moderation
+Automated spam score filter; Admin review queue for flagged articles; Source blacklist management
+
+
+9. DEVELOPMENT ROADMAP
+
+Phase
+Deliverables
+Phase 1 — Foundation (Weeks 1–3)
+MongoDB + Spring Boot setup, Kafka pipeline, basic Jsoup scraper for 10 sources, JWT auth, basic REST API, Next.js skeleton with dark theme
+Phase 2 — Core Engine (Weeks 4–6)
+Playwright workers, dedup engine, NER tagging, Redis caching, Elasticsearch integration, TLDR generation, 50+ sources live
+Phase 3 — UI Build (Weeks 7–9)
+Full L1 feed page, L2 article detail, search page, trending algorithm, like/save features, user profile page
+Phase 4 — Real-Time & Polish (Weeks 10–11)
+WebSocket breaking news, live ticker, company hub pages, daily digest, activity heatmap, keyboard shortcuts
+Phase 5 — Launch Prep (Week 12)
+Performance optimization, load testing, SEO audit, security penetration test, monitoring dashboards, beta user onboarding
+
+10. RISKS & MITIGATIONS
+
+Risk
+Mitigation
+Source blocks scraping
+Residential proxy rotation, rate limiting, Playwright headless browser for SPAs
+LLM API cost overrun
+Cache all TLDRs; batch embeddings; use Haiku/GPT-3.5 for summaries not GPT-4
+Near-duplicate flood
+SimHash dedup + bloom filter prevents 90%+ duplicates before DB write
+Elasticsearch index lag
+Async indexing via Kafka; search uses eventually-consistent model with < 5s delay
+MongoDB write throughput
+Time-series collection for interactions; write batching; Atlas auto-scaling
+WebSocket scalability
+Spring + STOMP over Redis pub/sub — horizontally scalable notification fanout
+
+
+APPENDIX — ENTITY RELATIONSHIP OVERVIEW
+
+CORE ENTITIES
+Article ← Interaction (LIKE/SAVE/VIEW/SHARE) → User || Article → Company (many-to-many via tags[]) || Article → Source (many-to-one) || User → Company (FOLLOW) || User → Category (FOLLOW)
+
+KAFKA TOPICS
+scraper.raw-articles (scraper → ingestion) | ingestion.enriched-articles (ingestion → api, search-indexer) | ingestion.breaking-news (ingestion → notification-service) | analytics.interactions (api → analytics-service)
+
+This document is the authoritative specification for NEXUS AI. All implementation decisions should reference this PRD. For questions or change requests, the product team must update version history in Section 1 before any changes take effect.
+
+— END OF DOCUMENT —
