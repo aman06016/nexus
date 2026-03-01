@@ -15,7 +15,10 @@
   --text-secondary: #9999bb;
   --text-tertiary: #55557a;
   --border-soft: #2a2a4a;
-  --bg-page-gradient: radial-gradient(circle at top right, #1e2247 0%, #0d0d1a 35%, #090914 100%);
+  --bg-page-gradient:
+    radial-gradient(1200px 540px at 88% -8%, rgba(0, 212, 255, 0.2) 0%, rgba(0, 212, 255, 0) 62%),
+    radial-gradient(900px 420px at 4% 14%, rgba(108, 99, 255, 0.2) 0%, rgba(108, 99, 255, 0) 66%),
+    linear-gradient(180deg, #13162a 0%, #0b0d17 48%, #080912 100%);
   --motion-fast: 140ms;
   --motion-base: 220ms;
   --motion-slow: 360ms;
@@ -34,7 +37,10 @@
   --text-secondary: #4a5a75;
   --text-tertiary: #72809b;
   --border-soft: #d7e0ef;
-  --bg-page-gradient: radial-gradient(circle at top right, #f7fbff 0%, #eef3fa 40%, #e8eef8 100%);
+  --bg-page-gradient:
+    radial-gradient(1200px 540px at 88% -8%, rgba(14, 141, 230, 0.12) 0%, rgba(14, 141, 230, 0) 62%),
+    radial-gradient(900px 420px at 4% 14%, rgba(90, 86, 255, 0.12) 0%, rgba(90, 86, 255, 0) 66%),
+    linear-gradient(180deg, #f6f9fe 0%, #eef3fa 44%, #e8eef8 100%);
 }
 
 html,
@@ -110,6 +116,271 @@ a[role="button"] {
   );
   background-size: 240% 100%;
   animation: skeleton-shimmer 1.35s linear infinite;
+}
+
+.hero-shell {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 25%, var(--border-soft) 75%);
+  background:
+    linear-gradient(140deg, color-mix(in srgb, var(--bg-secondary) 84%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 82%, transparent) 100%),
+    radial-gradient(420px 180px at 70% 0%, color-mix(in srgb, var(--accent-secondary) 26%, transparent) 0%, transparent 70%);
+  box-shadow:
+    0 30px 80px -45px color-mix(in srgb, var(--accent-secondary) 45%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
+}
+
+.hero-canvas {
+  background:
+    radial-gradient(300px 140px at 80% 12%, color-mix(in srgb, var(--accent-primary) 24%, transparent) 0%, transparent 72%),
+    linear-gradient(160deg, color-mix(in srgb, var(--bg-primary) 72%, transparent), color-mix(in srgb, var(--bg-secondary) 76%, transparent));
+}
+
+.hero-canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      transparent 14%,
+      color-mix(in srgb, var(--border-soft) 42%, transparent) 15%,
+      transparent 16%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 14%,
+      color-mix(in srgb, var(--border-soft) 36%, transparent) 15%,
+      transparent 16%,
+      transparent 100%
+    );
+  background-size: 26px 26px;
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.signal-core-shell {
+  background:
+    radial-gradient(220px 120px at 70% 6%, color-mix(in srgb, var(--accent-secondary) 22%, transparent), transparent 74%),
+    linear-gradient(160deg, color-mix(in srgb, var(--bg-primary) 68%, transparent), color-mix(in srgb, var(--bg-secondary) 74%, transparent));
+}
+
+.signal-core-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--border-soft) 24%, transparent) 50%,
+      transparent 100%
+    );
+  opacity: calc(0.16 + var(--signal-velocity, 0.4) * 0.22);
+  pointer-events: none;
+}
+
+.signal-core-stage {
+  position: absolute;
+  inset: 12px 12px auto 12px;
+  height: 200px;
+  perspective: 1200px;
+}
+
+.signal-core-glow {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 190px;
+  height: 190px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 45% 35%, color-mix(in srgb, white 22%, transparent), transparent 34%),
+    radial-gradient(circle at 65% 70%, color-mix(in srgb, var(--accent-secondary) 48%, transparent), transparent 62%),
+    radial-gradient(circle at 40% 40%, color-mix(in srgb, var(--accent-primary) 64%, transparent), transparent 75%);
+  filter: blur(14px);
+  opacity: calc(0.74 + var(--signal-velocity, 0.4) * 0.2);
+  animation: signal-pulse var(--pulse-duration, 2.7s) ease-in-out infinite alternate;
+}
+
+.signal-core-orb {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 148px;
+  height: 148px;
+  transform: translate(-50%, -50%) rotateX(22deg);
+  transform-style: preserve-3d;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, color-mix(in srgb, white 30%, transparent), transparent 35%),
+    radial-gradient(circle at 65% 74%, color-mix(in srgb, var(--accent-secondary) 38%, transparent), transparent 70%),
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-primary) 48%, transparent), color-mix(in srgb, var(--accent-secondary) 54%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 36%, transparent);
+  box-shadow:
+    inset -18px -22px 42px color-mix(in srgb, var(--bg-primary) 52%, transparent),
+    0 24px 48px -20px color-mix(in srgb, var(--accent-secondary) 54%, transparent);
+  animation: core-drift var(--orbit-duration, 7.4s) ease-in-out infinite;
+}
+
+.signal-core-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 38%, transparent);
+  transform-style: preserve-3d;
+  opacity: 0.82;
+}
+
+.signal-core-ring-a {
+  width: 186px;
+  height: 186px;
+  transform: translate(-50%, -50%) rotateX(66deg);
+  animation: core-rotate-x var(--orbit-duration, 7.4s) linear infinite;
+}
+
+.signal-core-ring-b {
+  width: 212px;
+  height: 116px;
+  transform: translate(-50%, -50%) rotateY(67deg);
+  animation: core-rotate-y calc(var(--orbit-duration, 7.4s) * 1.2) linear infinite reverse;
+}
+
+.signal-core-ring-c {
+  width: 158px;
+  height: 222px;
+  transform: translate(-50%, -50%) rotateZ(26deg);
+  border-color: color-mix(in srgb, var(--accent-primary) 42%, transparent);
+  animation: core-rotate-z calc(var(--orbit-duration, 7.4s) * 1.4) linear infinite;
+}
+
+.signal-core-filament {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160px;
+  height: 2px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-secondary) 78%, transparent), transparent);
+  transform-origin: center;
+  opacity: calc(0.54 + var(--signal-velocity, 0.4) * 0.24);
+}
+
+.signal-core-filament-a {
+  transform: translate(-50%, -50%) rotate(16deg) translateZ(30px);
+  animation: filament-sweep calc(var(--orbit-duration, 7.4s) * 0.8) ease-in-out infinite;
+}
+
+.signal-core-filament-b {
+  transform: translate(-50%, -50%) rotate(92deg) translateZ(22px);
+  animation: filament-sweep calc(var(--orbit-duration, 7.4s) * 1.1) ease-in-out infinite reverse;
+}
+
+.signal-core-filament-c {
+  transform: translate(-50%, -50%) rotate(148deg) translateZ(35px);
+  animation: filament-sweep calc(var(--orbit-duration, 7.4s) * 0.95) ease-in-out infinite;
+}
+
+.signal-core-particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-secondary) 82%, white 18%);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent-secondary) 68%, transparent);
+  opacity: 0;
+  animation: particle-burst var(--burst-duration, 4.2s) ease-out infinite;
+}
+
+.signal-core-particle-a {
+  animation-delay: 0s;
+}
+
+.signal-core-particle-b {
+  animation-delay: 1.2s;
+}
+
+.signal-core-particle-c {
+  animation-delay: 2.1s;
+}
+
+@keyframes core-drift {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotateX(22deg) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotateX(28deg) translateY(-6px);
+  }
+}
+
+@keyframes core-rotate-x {
+  from {
+    transform: translate(-50%, -50%) rotateX(66deg) rotateZ(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotateX(66deg) rotateZ(360deg);
+  }
+}
+
+@keyframes core-rotate-y {
+  from {
+    transform: translate(-50%, -50%) rotateY(67deg) rotateX(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotateY(67deg) rotateX(360deg);
+  }
+}
+
+@keyframes core-rotate-z {
+  from {
+    transform: translate(-50%, -50%) rotateZ(26deg) rotateY(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotateZ(26deg) rotateY(360deg);
+  }
+}
+
+@keyframes filament-sweep {
+  0%,
+  100% {
+    opacity: 0.28;
+    filter: blur(0.2px);
+  }
+  50% {
+    opacity: 0.92;
+    filter: blur(0.8px);
+  }
+}
+
+@keyframes particle-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2) translate3d(0, 0, 0);
+  }
+  16% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1) translate3d(74px, -42px, 68px);
+  }
+}
+
+@keyframes signal-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.94);
+    opacity: 0.68;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.06);
+    opacity: 0.92;
+  }
 }
 
 @keyframes skeleton-shimmer {

@@ -96,7 +96,7 @@ export function ArticleCard({
   const sourceDomain = article.source?.domain?.trim();
   const sourceTrust = getSourceTrust(sourceDomain);
   const title = sanitizeSnippet(normalizeHeadline(article.title), 140);
-  const summaryText = sanitizeSnippet(article.summary ?? "Summary pending ingestion.", 220);
+  const summaryText = sanitizeSnippet(article.summary ?? "Summary pending ingestion.", 170);
   const titleHref = article.url?.trim() ? article.url : `/search?q=${encodeURIComponent(article.title)}`;
   const opensExternal = !!article.url?.trim();
   const confidenceScore = Math.min(
@@ -237,7 +237,8 @@ export function ArticleCard({
       : pulse.heat === "warm"
         ? "border-accentPrimary/50 bg-accentPrimary/10 text-accentPrimary"
         : "border-borderSoft bg-bgTertiary text-textSecondary";
-  const shiftText = pulse.shift === "up" ? "Consensus rising" : pulse.shift === "down" ? "Consensus softening" : "Consensus stable";
+  const shiftText =
+    pulse.shift === "up" ? "Consensus rising" : pulse.shift === "down" ? "Consensus softening" : "Consensus stable";
 
   return (
     <article
@@ -249,7 +250,6 @@ export function ArticleCard({
           {categoryLabel}
         </span>
         <span className="text-textSecondary">{sourceName}</span>
-        {sourceDomain ? <span className="text-textTertiary">({sourceDomain})</span> : null}
         <span
           title={sourceTrust.rationale}
           className={`rounded-full border px-2 py-0.5 ${
@@ -267,7 +267,7 @@ export function ArticleCard({
           {publishedLabel}
         </time>
         <span className={`rounded-full border px-2 py-0.5 ${heatStyle}`}>
-          Team pulse: {pulse.heat}
+          {pulse.heat} pulse
         </span>
       </div>
 
@@ -285,21 +285,13 @@ export function ArticleCard({
       <p className={`mt-3 text-sm leading-relaxed text-textSecondary ${compact ? "line-clamp-2" : "line-clamp-3"}`}>
         {summaryText}
       </p>
-      <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-        {rankingReason ? (
-          <span className="rounded-full border border-borderSoft bg-bgTertiary px-2.5 py-1 text-textSecondary">
-            Why shown to you: {rankingReason}
-          </span>
-        ) : null}
-        {suppressionActive ? (
-          <span className="rounded-full border border-borderSoft bg-bgTertiary px-2.5 py-1 text-textSecondary">
-            Duplicate and old-content suppression active
-          </span>
-        ) : null}
-        <span className="rounded-full border border-borderSoft bg-bgTertiary px-2.5 py-1 text-textSecondary">
-          {shiftText}
-        </span>
-      </div>
+      <p className="mt-2 line-clamp-1 text-xs text-textTertiary">
+        {rankingReason
+          ? `Why shown: ${rankingReason}`
+          : suppressionActive
+            ? "Quality guardrails: duplicate and stale suppression active"
+            : shiftText}
+      </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
         <button
