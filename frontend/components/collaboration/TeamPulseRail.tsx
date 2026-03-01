@@ -31,9 +31,14 @@ export function TeamPulseRail({ scopeId = "global" }: TeamPulseRailProps) {
 
       <div className="mt-3 space-y-2">
         {entries.length === 0 ? (
-          <p className="rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-xs text-textSecondary">
-            No team reactions yet. Use Watch, Debunk, or Escalate on stories.
-          </p>
+          <section className="empty-calm-field rounded-md border border-borderSoft bg-bgTertiary/70 px-3 py-3">
+            <div className="calm-orb calm-orb-a" aria-hidden="true" />
+            <div className="calm-orb calm-orb-c" aria-hidden="true" />
+            <p className="text-xs text-textSecondary">Team pulse is calm.</p>
+            <p className="mt-1 text-[11px] text-textTertiary">
+              First Watch, Debunk, or Escalate reaction will seed shared momentum.
+            </p>
+          </section>
         ) : (
           entries.map((entry) => (
             <article key={entry.articleId} className="rounded-md border border-borderSoft bg-bgTertiary/70 p-2.5">
@@ -61,4 +66,3 @@ export function TeamPulseRail({ scopeId = "global" }: TeamPulseRailProps) {
     </aside>
   );
 }
-

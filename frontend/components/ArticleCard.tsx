@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Article, toggleLike, toggleSave } from "@/lib/api/client";
 import { getOrCreateSessionId } from "@/lib/session/session";
 import { useToast } from "@/components/feedback/ToastProvider";
@@ -63,6 +63,101 @@ function sanitizeSnippet(input: string, maxChars: number): string {
   }
 
   return `${cleaned.slice(0, maxChars - 1).trimEnd()}…`;
+}
+
+function hashSeed(input: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash);
+}
+
+function buildImpactSparkline(article: Article): number[] {
+  const impact = Math.max(0, Math.min(100, article.impactScore ?? 0));
+  const engagement =
+    Math.min(100, (article.stats?.likes ?? 0) * 4 + (article.stats?.saves ?? 0) * 6 + (article.stats?.views ?? 0) * 0.04);
+  const seed = hashSeed(`${article.id}:${article.title}`);
+  const points: number[] = [];
+  for (let index = 0; index < 14; index += 1) {
+    const harmonic = Math.sin((index + (seed % 7)) * 0.74) * 9 + Math.cos((index + (seed % 11)) * 0.34) * 6;
+    const ramp = (impact * 0.35 + engagement * 0.18) * (index / 13);
+    const value = Math.max(8, Math.min(96, 24 + harmonic + ramp));
+    points.push(value);
+  }
+  points[13] = Math.max(points[13], Math.min(96, 28 + impact * 0.68));
+  return points;
+}
+
+function MiniSignalCanvas({ intensity }: { intensity: number }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return;
+    }
+
+    const ratio = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+    const size = 56;
+    canvas.width = size * ratio;
+    canvas.height = size * ratio;
+    context.scale(ratio, ratio);
+
+    let frame = 0;
+    let mounted = true;
+    const pulseScale = 0.7 + intensity * 0.45;
+
+    const render = () => {
+      if (!mounted) {
+        return;
+      }
+      frame += 1;
+      const t = frame * 0.03;
+      context.clearRect(0, 0, size, size);
+
+      const orbitX = 28 + Math.sin(t * 1.2) * 5;
+      const orbitY = 28 + Math.cos(t * 0.95) * 4;
+      const radius = 12 + Math.sin(t * 1.6) * 1.8;
+      const glow = context.createRadialGradient(orbitX, orbitY, 1, orbitX, orbitY, 22);
+      glow.addColorStop(0, "rgba(116, 234, 255, 0.88)");
+      glow.addColorStop(0.55, "rgba(118, 129, 255, 0.42)");
+      glow.addColorStop(1, "rgba(118, 129, 255, 0)");
+      context.fillStyle = glow;
+      context.fillRect(0, 0, size, size);
+
+      context.beginPath();
+      context.arc(orbitX, orbitY, radius, 0, Math.PI * 2);
+      context.fillStyle = "rgba(143, 241, 255, 0.32)";
+      context.fill();
+
+      context.beginPath();
+      context.arc(orbitX, orbitY, radius * pulseScale, 0, Math.PI * 2);
+      context.strokeStyle = "rgba(103, 221, 255, 0.44)";
+      context.lineWidth = 1.1;
+      context.stroke();
+
+      window.requestAnimationFrame(render);
+    };
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reducedMotion) {
+      window.requestAnimationFrame(render);
+    } else {
+      render();
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [intensity]);
+
+  return <canvas ref={canvasRef} className="signal-mini-canvas" aria-hidden="true" />;
 }
 
 export function ArticleCard({
@@ -239,10 +334,23 @@ export function ArticleCard({
         : "border-borderSoft bg-bgTertiary text-textSecondary";
   const shiftText =
     pulse.shift === "up" ? "Consensus rising" : pulse.shift === "down" ? "Consensus softening" : "Consensus stable";
+  const sparklinePoints = useMemo(() => buildImpactSparkline(article), [article]);
+  const sparklinePolyline = sparklinePoints
+    .map((value, index) => `${(index / Math.max(sparklinePoints.length - 1, 1)) * 100},${100 - value}`)
+    .join(" ");
+  const sourceGlowClass =
+    sourceTrust.tone === "high"
+      ? "source-badge-glow-high"
+      : sourceTrust.tone === "medium"
+        ? "source-badge-glow-medium"
+        : "source-badge-glow-low";
+  const topRanked = revealIndex < 3;
+  const priorityMotion = revealIndex < 6;
+  const signalIntensity = Math.min(1, Math.max(0.2, (confidenceScore + (article.impactScore ?? 0)) / 180));
 
   return (
     <article
-      className="motion-fade-up motion-lift rounded-card border border-borderSoft bg-bgSecondary/75 p-5 transition hover:shadow-bloomCyan"
+      className={`signal-capsule ${priorityMotion ? "signal-capsule-primary" : "motion-fade-up"} motion-lift rounded-card border border-borderSoft bg-bgSecondary/75 p-5 transition hover:shadow-bloomCyan`}
       style={{ animationDelay: `${Math.min(revealIndex * 40, 260)}ms` }}
     >
       <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
@@ -252,7 +360,7 @@ export function ArticleCard({
         <span className="text-textSecondary">{sourceName}</span>
         <span
           title={sourceTrust.rationale}
-          className={`rounded-full border px-2 py-0.5 ${
+          className={`rounded-full border px-2 py-0.5 ${sourceGlowClass} ${
             sourceTrust.tone === "high"
               ? "border-accentSuccess/50 bg-accentSuccess/10 text-accentSuccess"
               : sourceTrust.tone === "medium"
@@ -285,6 +393,24 @@ export function ArticleCard({
       <p className={`mt-3 text-sm leading-relaxed text-textSecondary ${compact ? "line-clamp-2" : "line-clamp-3"}`}>
         {summaryText}
       </p>
+      <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+        <div
+          className="confidence-ring"
+          style={{ "--confidence": `${confidenceScore}` } as CSSProperties}
+          aria-label={`Confidence ${confidenceScore}%`}
+        >
+          <span>{confidenceScore}%</span>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-textTertiary">Impact trajectory</p>
+          <div className="impact-sparkline mt-1">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points={sparklinePolyline} />
+            </svg>
+          </div>
+        </div>
+        {topRanked ? <MiniSignalCanvas intensity={signalIntensity} /> : null}
+      </div>
       <p className="mt-2 line-clamp-1 text-xs text-textTertiary">
         {rankingReason
           ? `Why shown: ${rankingReason}`

@@ -38,9 +38,14 @@ export function ShockwaveAlertsPanel() {
 
       <div className="mt-4 space-y-3">
         {alerts.length === 0 ? (
-          <p className="rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm text-textSecondary">
-            No shockwave alerts yet. Monitoring live feed velocity.
-          </p>
+          <section className="empty-calm-field rounded-md border border-borderSoft bg-bgTertiary/70 px-3 py-3">
+            <div className="calm-orb calm-orb-a" aria-hidden="true" />
+            <div className="calm-orb calm-orb-b" aria-hidden="true" />
+            <p className="text-sm text-textSecondary">No shockwave alerts right now.</p>
+            <p className="mt-1 text-xs text-textTertiary">
+              Monitoring latent pressure across sources. You&apos;ll see escalation here first.
+            </p>
+          </section>
         ) : (
           alerts.map((alert) => (
             <article key={alert.id} className="rounded-md border border-borderSoft bg-bgTertiary/70 p-3">

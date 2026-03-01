@@ -517,11 +517,11 @@ export function AdaptiveFeedSection({
           </div>
         ) : null}
 
-        <div className="mt-3 flex flex-wrap gap-2 text-sm">
+        <div className="filter-choreo-bar mt-3 flex flex-wrap gap-2 text-sm">
           <button
             type="button"
             onClick={() => setFilters((current) => ({ ...current, last24h: !current.last24h }))}
-            className={`glass-control motion-press rounded-md px-3 py-2 transition ${
+            className={`glass-control motion-press motion-chip rounded-md px-3 py-2 transition ${
               filters.last24h
                 ? "border-accentPrimary/60 bg-accentPrimary/18 text-accentPrimary"
                 : "text-textSecondary hover:bg-bgPrimary/70 hover:text-textPrimary"
@@ -532,7 +532,7 @@ export function AdaptiveFeedSection({
           <button
             type="button"
             onClick={() => setFilters((current) => ({ ...current, highImpact: !current.highImpact }))}
-            className={`glass-control motion-press rounded-md px-3 py-2 transition ${
+            className={`glass-control motion-press motion-chip rounded-md px-3 py-2 transition ${
               filters.highImpact
                 ? "border-accentPrimary/60 bg-accentPrimary/18 text-accentPrimary"
                 : "text-textSecondary hover:bg-bgPrimary/70 hover:text-textPrimary"
@@ -543,7 +543,7 @@ export function AdaptiveFeedSection({
           <button
             type="button"
             onClick={() => setFilters((current) => ({ ...current, primarySourcesOnly: !current.primarySourcesOnly }))}
-            className={`glass-control motion-press rounded-md px-3 py-2 transition ${
+            className={`glass-control motion-press motion-chip rounded-md px-3 py-2 transition ${
               filters.primarySourcesOnly
                 ? "border-accentPrimary/60 bg-accentPrimary/18 text-accentPrimary"
                 : "text-textSecondary hover:bg-bgPrimary/70 hover:text-textPrimary"

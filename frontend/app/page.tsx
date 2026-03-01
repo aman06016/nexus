@@ -9,6 +9,8 @@ import { TrustSignals } from "@/components/trust/TrustSignals";
 import { ShockwaveAlertsPanel } from "@/components/radar/ShockwaveAlertsPanel";
 import { TeamPulseRail } from "@/components/collaboration/TeamPulseRail";
 import { SignalCoreHero } from "@/components/hero/SignalCoreHero";
+import { DataHorizonDivider } from "@/components/dividers/DataHorizonDivider";
+import { CommandCenterStrip } from "@/components/status/CommandCenterStrip";
 
 export default async function HomePage() {
   const [articles, overview] = await Promise.all([
@@ -46,6 +48,7 @@ export default async function HomePage() {
         primaryCount={primaryCount}
         monitoredSources={monitoredSources}
       />
+      <CommandCenterStrip liveVelocity={liveVelocity} monitoredSources={monitoredSources} />
 
       <section className="rounded-card border border-borderSoft bg-bgSecondary/60 p-4">
         <h2 className="section-display-title">Start Here</h2>
@@ -103,9 +106,10 @@ export default async function HomePage() {
               includePersonalizedEndpoint
               strictQualityMode
             />
-            <PreferenceOnboarding />
           </div>
           <div className="space-y-6">
+            <PreferenceOnboarding />
+            <DataHorizonDivider />
             <TrustSignals
               monitoredSources={monitoredSources}
               rankedStories={articles.length}
