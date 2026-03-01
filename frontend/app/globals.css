@@ -122,265 +122,103 @@ a[role="button"] {
   border: 1px solid color-mix(in srgb, var(--accent-primary) 25%, var(--border-soft) 75%);
   background:
     linear-gradient(140deg, color-mix(in srgb, var(--bg-secondary) 84%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 82%, transparent) 100%),
-    radial-gradient(420px 180px at 70% 0%, color-mix(in srgb, var(--accent-secondary) 26%, transparent) 0%, transparent 70%);
+    radial-gradient(540px 220px at 70% 0%, color-mix(in srgb, var(--accent-secondary) 26%, transparent) 0%, transparent 70%);
   box-shadow:
     0 30px 80px -45px color-mix(in srgb, var(--accent-secondary) 45%, transparent),
     inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
 }
 
-.hero-canvas {
-  background:
-    radial-gradient(300px 140px at 80% 12%, color-mix(in srgb, var(--accent-primary) 24%, transparent) 0%, transparent 72%),
-    linear-gradient(160deg, color-mix(in srgb, var(--bg-primary) 72%, transparent), color-mix(in srgb, var(--bg-secondary) 76%, transparent));
+.hero-grid {
+  transform-style: preserve-3d;
 }
 
-.hero-canvas::before {
+.hero-scene-shell {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--border-soft) 56%, transparent),
+    0 30px 70px -45px color-mix(in srgb, var(--accent-secondary) 50%, transparent);
+}
+
+.hero-scene-shell::before {
   content: "";
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(
-      90deg,
-      transparent 0%,
-      transparent 14%,
-      color-mix(in srgb, var(--border-soft) 42%, transparent) 15%,
-      transparent 16%,
-      transparent 100%
-    ),
-    linear-gradient(
-      180deg,
-      transparent 0%,
-      transparent 14%,
-      color-mix(in srgb, var(--border-soft) 36%, transparent) 15%,
-      transparent 16%,
-      transparent 100%
-    );
-  background-size: 26px 26px;
-  opacity: 0.42;
+    radial-gradient(220px 140px at 25% 85%, color-mix(in srgb, var(--accent-primary) 20%, transparent), transparent 70%),
+    radial-gradient(260px 160px at 80% 5%, color-mix(in srgb, var(--accent-secondary) 26%, transparent), transparent 75%);
+  opacity: 0.75;
   pointer-events: none;
 }
 
-.signal-core-shell {
-  background:
-    radial-gradient(220px 120px at 70% 6%, color-mix(in srgb, var(--accent-secondary) 22%, transparent), transparent 74%),
-    linear-gradient(160deg, color-mix(in srgb, var(--bg-primary) 68%, transparent), color-mix(in srgb, var(--bg-secondary) 74%, transparent));
+.hero-reveal-step {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: hero-reveal 540ms var(--motion-ease) forwards;
 }
 
-.signal-core-shell::before {
-  content: "";
+@keyframes hero-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.signal-poster {
   position: absolute;
-  inset: 0;
+  inset: 12px;
+  overflow: hidden;
   background:
-    linear-gradient(
-      90deg,
-      transparent 0%,
-      color-mix(in srgb, var(--border-soft) 24%, transparent) 50%,
-      transparent 100%
-    );
-  opacity: calc(0.16 + var(--signal-velocity, 0.4) * 0.22);
-  pointer-events: none;
+    radial-gradient(460px 220px at 56% 42%, color-mix(in srgb, var(--accent-secondary) 24%, transparent), transparent 70%),
+    linear-gradient(160deg, color-mix(in srgb, var(--bg-primary) 72%, transparent), color-mix(in srgb, #0f1d38 72%, transparent));
 }
 
-.signal-core-stage {
-  position: absolute;
-  inset: 12px 12px auto 12px;
-  height: 200px;
-  perspective: 1200px;
-}
-
-.signal-core-glow {
+.signal-poster-orb {
   position: absolute;
   left: 50%;
-  top: 48%;
-  width: 190px;
-  height: 190px;
+  top: 46%;
+  width: 180px;
+  height: 180px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background:
-    radial-gradient(circle at 45% 35%, color-mix(in srgb, white 22%, transparent), transparent 34%),
-    radial-gradient(circle at 65% 70%, color-mix(in srgb, var(--accent-secondary) 48%, transparent), transparent 62%),
-    radial-gradient(circle at 40% 40%, color-mix(in srgb, var(--accent-primary) 64%, transparent), transparent 75%);
-  filter: blur(14px);
-  opacity: calc(0.74 + var(--signal-velocity, 0.4) * 0.2);
-  animation: signal-pulse var(--pulse-duration, 2.7s) ease-in-out infinite alternate;
-}
-
-.signal-core-orb {
-  position: absolute;
-  left: 50%;
-  top: 44%;
-  width: 148px;
-  height: 148px;
-  transform: translate(-50%, -50%) rotateX(22deg);
-  transform-style: preserve-3d;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 28%, color-mix(in srgb, white 30%, transparent), transparent 35%),
-    radial-gradient(circle at 65% 74%, color-mix(in srgb, var(--accent-secondary) 38%, transparent), transparent 70%),
-    linear-gradient(145deg, color-mix(in srgb, var(--accent-primary) 48%, transparent), color-mix(in srgb, var(--accent-secondary) 54%, transparent));
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 36%, transparent);
+    radial-gradient(circle at 35% 30%, color-mix(in srgb, white 22%, transparent), transparent 35%),
+    radial-gradient(circle at 65% 74%, color-mix(in srgb, var(--accent-secondary) 34%, transparent), transparent 72%),
+    linear-gradient(150deg, color-mix(in srgb, var(--accent-primary) 40%, transparent), color-mix(in srgb, var(--accent-secondary) 40%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 30%, transparent);
   box-shadow:
-    inset -18px -22px 42px color-mix(in srgb, var(--bg-primary) 52%, transparent),
-    0 24px 48px -20px color-mix(in srgb, var(--accent-secondary) 54%, transparent);
-  animation: core-drift var(--orbit-duration, 7.4s) ease-in-out infinite;
+    inset -22px -24px 46px color-mix(in srgb, var(--bg-primary) 50%, transparent),
+    0 24px 58px -24px color-mix(in srgb, var(--accent-secondary) 48%, transparent);
 }
 
-.signal-core-ring {
+.signal-poster-ring {
   position: absolute;
   left: 50%;
   top: 50%;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 38%, transparent);
-  transform-style: preserve-3d;
-  opacity: 0.82;
+  border: 1px solid color-mix(in srgb, var(--accent-secondary) 36%, transparent);
 }
 
-.signal-core-ring-a {
-  width: 186px;
-  height: 186px;
-  transform: translate(-50%, -50%) rotateX(66deg);
-  animation: core-rotate-x var(--orbit-duration, 7.4s) linear infinite;
+.signal-poster-ring-a {
+  width: 240px;
+  height: 130px;
+  transform: translate(-50%, -50%) rotate(18deg);
 }
 
-.signal-core-ring-b {
-  width: 212px;
-  height: 116px;
-  transform: translate(-50%, -50%) rotateY(67deg);
-  animation: core-rotate-y calc(var(--orbit-duration, 7.4s) * 1.2) linear infinite reverse;
+.signal-poster-ring-b {
+  width: 184px;
+  height: 184px;
+  border-color: color-mix(in srgb, var(--accent-primary) 36%, transparent);
 }
 
-.signal-core-ring-c {
-  width: 158px;
-  height: 222px;
-  transform: translate(-50%, -50%) rotateZ(26deg);
-  border-color: color-mix(in srgb, var(--accent-primary) 42%, transparent);
-  animation: core-rotate-z calc(var(--orbit-duration, 7.4s) * 1.4) linear infinite;
-}
-
-.signal-core-filament {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 160px;
-  height: 2px;
-  border-radius: 99px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-secondary) 78%, transparent), transparent);
-  transform-origin: center;
-  opacity: calc(0.54 + var(--signal-velocity, 0.4) * 0.24);
-}
-
-.signal-core-filament-a {
-  transform: translate(-50%, -50%) rotate(16deg) translateZ(30px);
-  animation: filament-sweep calc(var(--orbit-duration, 7.4s) * 0.8) ease-in-out infinite;
-}
-
-.signal-core-filament-b {
-  transform: translate(-50%, -50%) rotate(92deg) translateZ(22px);
-  animation: filament-sweep calc(var(--orbit-duration, 7.4s) * 1.1) ease-in-out infinite reverse;
-}
-
-.signal-core-filament-c {
-  transform: translate(-50%, -50%) rotate(148deg) translateZ(35px);
-  animation: filament-sweep calc(var(--orbit-duration, 7.4s) * 0.95) ease-in-out infinite;
-}
-
-.signal-core-particle {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--accent-secondary) 82%, white 18%);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--accent-secondary) 68%, transparent);
-  opacity: 0;
-  animation: particle-burst var(--burst-duration, 4.2s) ease-out infinite;
-}
-
-.signal-core-particle-a {
-  animation-delay: 0s;
-}
-
-.signal-core-particle-b {
-  animation-delay: 1.2s;
-}
-
-.signal-core-particle-c {
-  animation-delay: 2.1s;
-}
-
-@keyframes core-drift {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) rotateX(22deg) translateY(0);
-  }
-  50% {
-    transform: translate(-50%, -50%) rotateX(28deg) translateY(-6px);
-  }
-}
-
-@keyframes core-rotate-x {
-  from {
-    transform: translate(-50%, -50%) rotateX(66deg) rotateZ(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotateX(66deg) rotateZ(360deg);
-  }
-}
-
-@keyframes core-rotate-y {
-  from {
-    transform: translate(-50%, -50%) rotateY(67deg) rotateX(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotateY(67deg) rotateX(360deg);
-  }
-}
-
-@keyframes core-rotate-z {
-  from {
-    transform: translate(-50%, -50%) rotateZ(26deg) rotateY(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotateZ(26deg) rotateY(360deg);
-  }
-}
-
-@keyframes filament-sweep {
-  0%,
-  100% {
-    opacity: 0.28;
-    filter: blur(0.2px);
-  }
-  50% {
-    opacity: 0.92;
-    filter: blur(0.8px);
-  }
-}
-
-@keyframes particle-burst {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.2) translate3d(0, 0, 0);
-  }
-  16% {
-    opacity: 0.92;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1) translate3d(74px, -42px, 68px);
-  }
-}
-
-@keyframes signal-pulse {
-  0% {
-    transform: translate(-50%, -50%) scale(0.94);
-    opacity: 0.68;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1.06);
-    opacity: 0.92;
-  }
+.signal-poster-ring-c {
+  width: 268px;
+  height: 106px;
+  border-color: color-mix(in srgb, white 28%, transparent);
+  transform: translate(-50%, -50%) rotate(-14deg);
 }
 
 @keyframes skeleton-shimmer {

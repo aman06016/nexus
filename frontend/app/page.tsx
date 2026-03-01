@@ -1,6 +1,5 @@
 import { fetchAdminOverview, fetchArticles } from "@/lib/api/client";
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { DiscoveryAssistant } from "@/components/discovery/DiscoveryAssistant";
 import { ContextualEmptyState } from "@/components/empty/ContextualEmptyState";
 import { AdaptiveFeedSection } from "@/components/personalization/AdaptiveFeedSection";
@@ -9,6 +8,7 @@ import { MyBriefRail } from "@/components/personalization/MyBriefRail";
 import { TrustSignals } from "@/components/trust/TrustSignals";
 import { ShockwaveAlertsPanel } from "@/components/radar/ShockwaveAlertsPanel";
 import { TeamPulseRail } from "@/components/collaboration/TeamPulseRail";
+import { SignalCoreHero } from "@/components/hero/SignalCoreHero";
 
 export default async function HomePage() {
   const [articles, overview] = await Promise.all([
@@ -37,79 +37,15 @@ export default async function HomePage() {
     1,
     Math.max(0.25, (freshCount * 1.2 + primaryCount * 0.8) / Math.max(articles.length, 1))
   );
-  const signalCoreStyle = {
-    "--signal-velocity": liveVelocity.toFixed(2),
-    "--orbit-duration": `${(9 - liveVelocity * 4.5).toFixed(2)}s`,
-    "--burst-duration": `${(4.8 - liveVelocity * 2).toFixed(2)}s`,
-    "--pulse-duration": `${(3 - liveVelocity).toFixed(2)}s`
-  } as CSSProperties;
 
   return (
     <section className="space-y-6">
-      <section className="hero-shell rounded-card p-6 md:p-8">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)] lg:items-end">
-          <div>
-            <p className="inline-flex rounded-full border border-accentSecondary/35 bg-accentSecondary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accentSecondary">
-              Real-Time Intelligence
-            </p>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
-              Separate signal from AI noise before it hits your roadmap.
-            </h1>
-            <p className="mt-3 max-w-2xl text-base text-textSecondary">
-              NEXUS ranks verified coverage by impact, freshness, and source quality so your team acts
-              on decisive stories faster.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link
-                href="/trending"
-                className="motion-press rounded-md border border-accentPrimary/50 bg-accentPrimary/20 px-4 py-2.5 text-sm font-semibold text-accentPrimary transition hover:bg-accentPrimary/30"
-              >
-                Open Top Signals
-              </Link>
-              <Link
-                href="/search?q=agentic%20ai"
-                className="motion-press rounded-md border border-borderSoft bg-bgSecondary/80 px-4 py-2.5 text-sm font-medium text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary"
-              >
-                Explore Agentic AI
-              </Link>
-            </div>
-          </div>
-          <div className="signal-core-shell relative overflow-hidden rounded-2xl border border-borderSoft/80 p-4" style={signalCoreStyle}>
-            <div className="signal-core-stage" aria-hidden="true">
-              <div className="signal-core-glow" />
-              <div className="signal-core-orb">
-                <span className="signal-core-ring signal-core-ring-a" />
-                <span className="signal-core-ring signal-core-ring-b" />
-                <span className="signal-core-ring signal-core-ring-c" />
-                <span className="signal-core-filament signal-core-filament-a" />
-                <span className="signal-core-filament signal-core-filament-b" />
-                <span className="signal-core-filament signal-core-filament-c" />
-                <span className="signal-core-particle signal-core-particle-a" />
-                <span className="signal-core-particle signal-core-particle-b" />
-                <span className="signal-core-particle signal-core-particle-c" />
-              </div>
-            </div>
-            <div className="relative z-10 mt-52 grid grid-cols-2 gap-2 text-sm">
-              <div className="rounded-xl border border-borderSoft bg-bgPrimary/70 p-2.5">
-                <p className="text-[11px] text-textTertiary">Signal Velocity</p>
-                <p className="mt-1 text-lg font-semibold text-accentSecondary">{Math.round(liveVelocity * 100)}%</p>
-              </div>
-              <div className="rounded-xl border border-borderSoft bg-bgPrimary/70 p-2.5">
-                <p className="text-[11px] text-textTertiary">Fresh in 24h</p>
-                <p className="mt-1 text-lg font-semibold text-textPrimary">{freshCount}</p>
-              </div>
-              <div className="rounded-xl border border-borderSoft bg-bgPrimary/70 p-2.5">
-                <p className="text-[11px] text-textTertiary">Primary Signals</p>
-                <p className="mt-1 text-lg font-semibold text-textPrimary">{primaryCount}</p>
-              </div>
-              <div className="rounded-xl border border-borderSoft bg-bgPrimary/70 p-2.5">
-                <p className="text-[11px] text-textTertiary">Tracked Sources</p>
-                <p className="mt-1 text-lg font-semibold text-textPrimary">{monitoredSources}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <SignalCoreHero
+        liveVelocity={liveVelocity}
+        freshCount={freshCount}
+        primaryCount={primaryCount}
+        monitoredSources={monitoredSources}
+      />
 
       <section className="grid gap-3 rounded-card border border-borderSoft bg-bgSecondary/60 p-4 md:grid-cols-3">
         <Link
