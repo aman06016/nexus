@@ -242,7 +242,7 @@ export function ArticleCard({
 
   return (
     <article
-      className="motion-fade-up motion-lift rounded-card border border-borderSoft bg-bgSecondary/75 p-5 transition hover:shadow-glow"
+      className="motion-fade-up motion-lift rounded-card border border-borderSoft bg-bgSecondary/75 p-5 transition hover:shadow-bloomCyan"
       style={{ animationDelay: `${Math.min(revealIndex * 40, 260)}ms` }}
     >
       <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
@@ -337,6 +337,11 @@ export function ArticleCard({
           <span className="rounded-full border border-borderSoft bg-bgTertiary px-2.5 py-1 text-xs font-medium text-textSecondary">
             Impact: {article.impactScore ?? 0}
           </span>
+          {(article.impactScore ?? 0) >= 80 ? (
+            <span className="rounded-full border border-accentWarm/60 bg-accentWarm/15 px-2.5 py-1 text-xs font-medium text-accentWarm shadow-bloomWarm">
+              Critical Signal
+            </span>
+          ) : null}
           <span className="rounded-full border border-borderSoft bg-bgTertiary px-2.5 py-1 text-xs font-medium text-textSecondary">
             Confidence: {confidenceScore}%
           </span>

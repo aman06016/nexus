@@ -7,7 +7,7 @@ import { getShockwaveAlerts, ShockwaveAlert, subscribeShockwaveAlerts } from "@/
 
 function severityTone(severity: ShockwaveAlert["severity"]): string {
   if (severity === "severe") {
-    return "border-accentDanger/50 bg-accentDanger/10 text-accentDanger";
+    return "alert-warm";
   }
   if (severity === "high") {
     return "border-accentPrimary/50 bg-accentPrimary/10 text-accentPrimary";
@@ -97,4 +97,3 @@ export function ShockwaveAlertsPanel() {
     </section>
   );
 }
-

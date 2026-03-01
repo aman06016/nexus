@@ -362,7 +362,7 @@ export function AdaptiveFeedSection({
       <div className="rounded-card border border-borderSoft bg-bgSecondary p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Adaptive Ranking</h2>
+            <h2 className="section-display-title text-2xl">Adaptive Ranking</h2>
             <p className="mt-1 text-sm text-textSecondary">
               Learns from reads, likes, saves, source affinity, and your onboarding preferences.
             </p>
@@ -521,10 +521,10 @@ export function AdaptiveFeedSection({
           <button
             type="button"
             onClick={() => setFilters((current) => ({ ...current, last24h: !current.last24h }))}
-            className={`motion-press rounded-md border px-3 py-2 transition ${
+            className={`glass-control motion-press rounded-md px-3 py-2 transition ${
               filters.last24h
-                ? "border-accentPrimary/60 bg-accentPrimary/15 text-accentPrimary"
-                : "border-borderSoft bg-bgTertiary text-textSecondary hover:bg-bgPrimary hover:text-textPrimary"
+                ? "border-accentPrimary/60 bg-accentPrimary/18 text-accentPrimary"
+                : "text-textSecondary hover:bg-bgPrimary/70 hover:text-textPrimary"
             }`}
           >
             Last 24h
@@ -532,10 +532,10 @@ export function AdaptiveFeedSection({
           <button
             type="button"
             onClick={() => setFilters((current) => ({ ...current, highImpact: !current.highImpact }))}
-            className={`motion-press rounded-md border px-3 py-2 transition ${
+            className={`glass-control motion-press rounded-md px-3 py-2 transition ${
               filters.highImpact
-                ? "border-accentPrimary/60 bg-accentPrimary/15 text-accentPrimary"
-                : "border-borderSoft bg-bgTertiary text-textSecondary hover:bg-bgPrimary hover:text-textPrimary"
+                ? "border-accentPrimary/60 bg-accentPrimary/18 text-accentPrimary"
+                : "text-textSecondary hover:bg-bgPrimary/70 hover:text-textPrimary"
             }`}
           >
             High Impact
@@ -543,10 +543,10 @@ export function AdaptiveFeedSection({
           <button
             type="button"
             onClick={() => setFilters((current) => ({ ...current, primarySourcesOnly: !current.primarySourcesOnly }))}
-            className={`motion-press rounded-md border px-3 py-2 transition ${
+            className={`glass-control motion-press rounded-md px-3 py-2 transition ${
               filters.primarySourcesOnly
-                ? "border-accentPrimary/60 bg-accentPrimary/15 text-accentPrimary"
-                : "border-borderSoft bg-bgTertiary text-textSecondary hover:bg-bgPrimary hover:text-textPrimary"
+                ? "border-accentPrimary/60 bg-accentPrimary/18 text-accentPrimary"
+                : "text-textSecondary hover:bg-bgPrimary/70 hover:text-textPrimary"
             }`}
           >
             Primary Sources Only

@@ -47,7 +47,12 @@ export default async function HomePage() {
         monitoredSources={monitoredSources}
       />
 
-      <section className="grid gap-3 rounded-card border border-borderSoft bg-bgSecondary/60 p-4 md:grid-cols-3">
+      <section className="rounded-card border border-borderSoft bg-bgSecondary/60 p-4">
+        <h2 className="section-display-title">Start Here</h2>
+        <p className="mt-1 text-sm text-textSecondary">
+          Go from scan to action in under two minutes.
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
         <Link
           href="/trending"
           className="motion-lift rounded-xl border border-borderSoft bg-bgPrimary/60 p-4 transition hover:border-accentPrimary/40"
@@ -72,6 +77,7 @@ export default async function HomePage() {
           <h2 className="mt-1 text-base font-semibold">Refine Scope</h2>
           <p className="mt-1 text-sm text-textSecondary">Focus by topic, company, and domain risk.</p>
         </Link>
+        </div>
       </section>
 
       <ShockwaveAlertsPanel />

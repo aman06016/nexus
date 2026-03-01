@@ -14,6 +14,7 @@ const config: Config = {
         bgTertiary: "var(--bg-tertiary)",
         accentPrimary: "var(--accent-primary)",
         accentSecondary: "var(--accent-secondary)",
+        accentWarm: "var(--accent-danger)",
         accentDanger: "var(--accent-danger)",
         accentSuccess: "var(--accent-success)",
         textPrimary: "var(--text-primary)",
@@ -22,7 +23,9 @@ const config: Config = {
         borderSoft: "var(--border-soft)"
       },
       boxShadow: {
-        glow: "0 4px 24px rgba(108,99,255,0.15)"
+        glow: "0 4px 24px rgba(108,99,255,0.15)",
+        bloomCyan: "0 18px 46px -24px rgba(0,212,255,0.5)",
+        bloomWarm: "0 18px 42px -24px rgba(255,138,61,0.45)"
       },
       borderRadius: {
         card: "12px"

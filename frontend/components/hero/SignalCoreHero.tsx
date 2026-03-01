@@ -186,18 +186,22 @@ export function SignalCoreHero({
   }, []);
 
   return (
-    <section className="hero-shell relative overflow-hidden rounded-card p-6 md:min-h-[82vh] md:p-8">
+    <section
+      className={`hero-shell relative overflow-hidden rounded-card p-6 md:min-h-[82vh] md:p-8 ${
+        scrollActivated ? "hero-shell-active" : ""
+      }`}
+    >
       <div className="hero-grid grid gap-8 md:h-full md:grid-cols-[minmax(0,1fr)_minmax(320px,0.95fr)] md:items-center">
         <div>
           <p className="inline-flex rounded-full border border-accentSecondary/35 bg-accentSecondary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accentSecondary">
             Real-Time Intelligence
           </p>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">
-            <span className="hero-reveal-step" style={{ animationDelay: "0ms" }}>
+          <h1 className="display-hero-title mt-4 text-4xl tracking-tight md:text-7xl">
+            <span className="hero-reveal-step display-hero-line" style={{ animationDelay: "0ms" }}>
               Separate signal from AI noise
             </span>
             <br />
-            <span className="hero-reveal-step" style={{ animationDelay: "120ms" }}>
+            <span className="hero-reveal-step display-hero-line" style={{ animationDelay: "120ms" }}>
               before it hits your roadmap.
             </span>
           </h1>
@@ -207,7 +211,7 @@ export function SignalCoreHero({
           <div className="hero-reveal-step mt-6 flex flex-wrap gap-3" style={{ animationDelay: "360ms" }}>
             <Link
               href="/trending"
-              className="motion-press rounded-md border border-accentPrimary/50 bg-accentPrimary/20 px-4 py-2.5 text-sm font-semibold text-accentPrimary transition hover:bg-accentPrimary/30"
+              className="cta-neon motion-press rounded-md px-4 py-2.5 text-sm font-semibold transition"
             >
               Open Top Signals
             </Link>

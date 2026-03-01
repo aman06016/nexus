@@ -490,8 +490,8 @@ export function NavBar() {
 
   return (
     <header
-      className={`sticky top-0 z-40 border-b border-borderSoft backdrop-blur transition ${
-        isCondensed ? "bg-bgPrimary/95 shadow-glow" : "bg-bgPrimary/85"
+      className={`glass-nav sticky top-0 z-40 border-b transition ${
+        isCondensed ? "shadow-glow" : ""
       }`}
     >
       <div className={`mx-auto flex w-full max-w-7xl items-center gap-4 px-4 transition ${isCondensed ? "py-2" : "py-3"}`}>
@@ -518,7 +518,7 @@ export function NavBar() {
           })}
         </nav>
 
-        <div className="hidden items-center gap-1 rounded-md border border-borderSoft bg-bgSecondary/80 p-1 md:flex">
+        <div className="glass-surface hidden items-center gap-1 rounded-md p-1 md:flex">
           {themeOptions.map((option) => {
             const active = preference === option.value;
             return (
@@ -539,7 +539,7 @@ export function NavBar() {
         </div>
 
         <form
-          className={`ml-auto flex w-full flex-wrap items-center gap-2 transition md:flex-nowrap ${
+          className={`glass-surface ml-auto flex w-full flex-wrap items-center gap-2 rounded-xl px-2 py-1 transition md:flex-nowrap ${
             isCondensed ? "max-w-2xl" : "max-w-xl"
           }`}
           onSubmit={handleSearchSubmit}
@@ -549,27 +549,27 @@ export function NavBar() {
             placeholder={isCondensed ? "Search..." : "Search AI news, models, companies..."}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="min-h-10 w-full rounded-lg border border-borderSoft bg-bgSecondary px-3 py-2 text-sm text-textPrimary outline-none ring-accentPrimary transition focus:ring"
+            className="glass-control min-h-10 w-full rounded-lg px-3 py-2 text-sm text-textPrimary outline-none ring-accentPrimary transition focus:ring"
           />
           {query ? (
             <button
               type="button"
               onClick={clearSearch}
-              className="motion-press min-h-10 rounded-md border border-borderSoft bg-bgSecondary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgTertiary hover:text-textPrimary"
+              className="glass-control motion-press min-h-10 rounded-md px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgTertiary/70 hover:text-textPrimary"
             >
               Clear
             </button>
           ) : null}
           <button
             type="submit"
-            className="motion-press min-h-10 rounded-md border border-borderSoft bg-bgSecondary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgTertiary hover:text-textPrimary"
+            className="glass-control motion-press min-h-10 rounded-md px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgTertiary/70 hover:text-textPrimary"
           >
             Search
           </button>
           <button
             type="button"
             onClick={cycleTheme}
-            className="motion-press min-h-10 rounded-md border border-borderSoft bg-bgSecondary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgTertiary hover:text-textPrimary md:hidden"
+            className="glass-control motion-press min-h-10 rounded-md px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgTertiary/70 hover:text-textPrimary md:hidden"
             title={`Theme: ${preference} (resolved ${resolvedTheme})`}
           >
             Theme {themeOptions.find((option) => option.value === preference)?.shortLabel}
@@ -578,7 +578,7 @@ export function NavBar() {
             ref={paletteTriggerRef}
             type="button"
             onClick={openPalette}
-            className="motion-press min-h-10 rounded-md border border-borderSoft bg-bgSecondary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgTertiary hover:text-textPrimary"
+            className="glass-control motion-press min-h-10 rounded-md px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgTertiary/70 hover:text-textPrimary"
             title="Command palette (Cmd/Ctrl+K)"
             aria-haspopup="dialog"
             aria-expanded={paletteOpen}
@@ -607,7 +607,7 @@ export function NavBar() {
                 role="dialog"
                 aria-modal="true"
                 aria-label="Command palette"
-                className="motion-fade-up w-full max-w-3xl rounded-xl border border-borderSoft bg-bgSecondary p-3 shadow-glow"
+                className="glass-surface motion-fade-up w-full max-w-3xl rounded-xl p-3 shadow-glow"
                 onMouseDown={(event) => event.stopPropagation()}
                 onKeyDown={handlePaletteKeyDown}
               >
@@ -616,7 +616,7 @@ export function NavBar() {
                   <button
                     type="button"
                     onClick={closePalette}
-                    className="motion-press rounded border border-borderSoft bg-bgTertiary px-2 py-1 text-xs text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary"
+                    className="glass-control motion-press rounded px-2 py-1 text-xs text-textSecondary transition hover:bg-bgPrimary/70 hover:text-textPrimary"
                   >
                     Esc
                   </button>
@@ -627,7 +627,7 @@ export function NavBar() {
                   value={paletteQuery}
                   onChange={(event) => setPaletteQuery(event.target.value)}
                   placeholder="Type a command, page, or action..."
-                  className="w-full rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm outline-none ring-accentPrimary transition focus:ring"
+                  className="glass-control w-full rounded-md px-3 py-2 text-sm outline-none ring-accentPrimary transition focus:ring"
                 />
                 <p className="mt-1 text-[11px] text-textTertiary">
                   Enter runs selected command. If no match, Enter clears query.
