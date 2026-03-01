@@ -1,5 +1,8 @@
 import { FeedGrid } from "@/features/feed/FeedGrid";
 import { fetchSearchResults } from "@/lib/api/client";
+import { SearchFiltersForm } from "@/components/SearchFiltersForm";
+import { DiscoveryAssistant } from "@/components/discovery/DiscoveryAssistant";
+import { ContextualEmptyState } from "@/components/empty/ContextualEmptyState";
 
 type SearchPageProps = {
   searchParams?: {
@@ -30,38 +33,45 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         <h1 className="text-2xl font-semibold">Search</h1>
         <p className="mt-2 text-textSecondary">Full-text and entity search via Elasticsearch index.</p>
 
-        <form className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3" method="GET" action="/search">
-          <input
-            name="q"
-            defaultValue={query}
-            placeholder="Search topic"
-            className="rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm outline-none"
-          />
-          <input
-            name="category"
-            defaultValue={category}
-            placeholder="Category (optional)"
-            className="rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm outline-none"
-          />
-          <input
-            name="company"
-            defaultValue={company}
-            placeholder="Company (optional)"
-            className="rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm outline-none"
-          />
-        </form>
+        <SearchFiltersForm initialQuery={query} initialCategory={category} initialCompany={company} />
       </div>
 
       {!hasFilters ? (
-        <section className="rounded-card border border-borderSoft bg-bgSecondary p-6 text-textSecondary">
-          Enter a query or filter to search indexed AI articles.
-        </section>
+        <ContextualEmptyState
+          title="Start with a Topic or Filter"
+          description="Enter at least one value to query indexed AI articles."
+          guidance={[
+            "Try broad themes first, then tighten with category and company filters.",
+            "Use advanced filters only when you need precision."
+          ]}
+          actions={[
+            { href: "/search?q=agentic%20ai", label: "Try: agentic ai" },
+            { href: "/search?q=model%20release&company=Anthropic", label: "Try: model release + Anthropic" }
+          ]}
+        />
       ) : results.length === 0 ? (
-        <section className="rounded-card border border-borderSoft bg-bgSecondary p-6 text-textSecondary">
-          No matching results found.
-        </section>
+        <ContextualEmptyState
+          title="No matching results found"
+          description="Your current filters are too narrow for indexed content."
+          guidance={[
+            "Remove either category or company and retry.",
+            "Search by a broader theme such as security, policy, or model.",
+            "Use Trending to discover active topics, then return to refine."
+          ]}
+          actions={[
+            { href: "/trending", label: "Explore Trending" },
+            { href: "/search", label: "Reset Search" }
+          ]}
+        />
       ) : (
-        <FeedGrid articles={results} />
+        <>
+          <DiscoveryAssistant
+            articles={results}
+            query={`${query} ${category} ${company}`.trim()}
+            scopeLabel="your search results"
+          />
+          <FeedGrid articles={results} />
+        </>
       )}
     </section>
   );

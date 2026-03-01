@@ -37,7 +37,6 @@ public class SourceService {
             .switchIfEmpty(Mono.error(new ResourceNotFoundException("Source not found: " + sourceId)))
             .flatMap(source -> {
                 source.setLastSuccess(Instant.now());
-                source.setStatus(SourceStatus.ACTIVE);
                 return sourceRepository.save(source);
             });
     }

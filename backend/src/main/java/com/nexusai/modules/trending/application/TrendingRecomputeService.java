@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -25,7 +26,12 @@ public class TrendingRecomputeService {
 
     @Scheduled(fixedDelayString = "${nexus.trending.recompute-delay-ms}")
     public void recomputeTrendingScores() {
-        articleRepository.findByStatusOrderByPublishedAtDesc("PUBLISHED", PageRequest.of(0, 300))
+        recomputeNow()
+            .subscribe(updated -> log.info("Trending recompute finished. updatedArticles={}", updated));
+    }
+
+    public Mono<Long> recomputeNow() {
+        return articleRepository.findByStatusOrderByPublishedAtDesc("PUBLISHED", PageRequest.of(0, 300))
             .collectList()
             .flatMapMany(articles -> {
                 Instant now = Instant.now();
@@ -41,8 +47,7 @@ public class TrendingRecomputeService {
                         return articleRepository.save(article);
                     });
             })
-            .count()
-            .subscribe(updated -> log.info("Trending recompute finished. updatedArticles={}", updated));
+            .count();
     }
 
     private int computeTrendScore(Article article, List<Article> recent, Instant now) {

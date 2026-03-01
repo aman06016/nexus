@@ -42,6 +42,11 @@ public class ArticleController {
         return articleService.getTrending(page, limit);
     }
 
+    @GetMapping("/digest")
+    public Flux<Article> getDigest(@RequestParam(defaultValue = "10") int limit) {
+        return articleService.getDigest(limit);
+    }
+
     @GetMapping("/saved")
     public Flux<Article> getSavedArticles(
         @RequestHeader(name = SESSION_HEADER) String sessionId,

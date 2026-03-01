@@ -15,4 +15,6 @@ public interface ArticleRepository extends ReactiveMongoRepository<Article, Stri
     Mono<Article> findByCanonicalUrl(String canonicalUrl);
 
     Flux<Article> findByIdIn(Collection<String> ids);
+
+    Mono<Long> countByStatus(String status);
 }

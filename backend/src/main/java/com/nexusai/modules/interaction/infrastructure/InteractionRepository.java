@@ -10,9 +10,17 @@ import reactor.core.publisher.Mono;
 public interface InteractionRepository extends ReactiveMongoRepository<Interaction, String> {
     Mono<Interaction> findBySessionIdAndArticleIdAndType(String sessionId, String articleId, InteractionType type);
 
+    Flux<Interaction> findAllBySessionIdAndArticleIdAndType(String sessionId, String articleId, InteractionType type);
+
     Mono<Long> countByArticleIdAndType(String articleId, InteractionType type);
 
     Flux<Interaction> findBySessionIdAndTypeOrderByTimestampDesc(String sessionId, InteractionType type);
 
     Flux<Interaction> findBySessionIdAndTypeInOrderByTimestampDesc(String sessionId, Collection<InteractionType> types);
+
+    Flux<Interaction> findBySessionIdAndArticleIdInAndTypeIn(
+        String sessionId,
+        Collection<String> articleIds,
+        Collection<InteractionType> types
+    );
 }

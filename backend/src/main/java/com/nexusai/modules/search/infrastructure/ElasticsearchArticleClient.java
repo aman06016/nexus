@@ -127,12 +127,16 @@ public class ElasticsearchArticleClient {
 
         ObjectNode query = root.putObject("query").putObject("bool");
         ArrayNode must = query.putArray("must");
+        ArrayNode should = query.putArray("should");
         ArrayNode filter = query.putArray("filter");
         ArrayNode mustNot = query.putArray("must_not");
 
         if (criteria.query() != null && !criteria.query().isBlank()) {
+            String normalizedQuery = criteria.query().trim();
             ObjectNode multiMatch = objectMapper.createObjectNode();
-            multiMatch.put("query", criteria.query());
+            multiMatch.put("query", normalizedQuery);
+            multiMatch.put("type", "best_fields");
+            multiMatch.put("minimum_should_match", "75%");
             ArrayNode fields = multiMatch.putArray("fields");
             fields.add("title^4");
             fields.add("summary^2");
@@ -140,16 +144,37 @@ public class ElasticsearchArticleClient {
             fields.add("companies^2");
             fields.add("category");
             must.addObject().set("multi_match", multiMatch);
+
+            should.addObject()
+                .putObject("match_phrase")
+                .putObject("title")
+                .put("query", normalizedQuery)
+                .put("boost", 4);
+            should.addObject()
+                .putObject("match_phrase")
+                .putObject("companies")
+                .put("query", normalizedQuery)
+                .put("boost", 5);
+            should.addObject()
+                .putObject("match_phrase")
+                .putObject("sourceName")
+                .put("query", normalizedQuery)
+                .put("boost", 2);
+            query.put("minimum_should_match", 0);
         } else {
             must.addObject().putObject("match_all");
         }
 
         if (criteria.category() != null && !criteria.category().isBlank()) {
-            filter.addObject().putObject("term").putObject("category").put("value", criteria.category());
+            ObjectNode categoryTerm = filter.addObject().putObject("term").putObject("category");
+            categoryTerm.put("value", criteria.category());
+            categoryTerm.put("case_insensitive", true);
         }
 
         if (criteria.company() != null && !criteria.company().isBlank()) {
-            filter.addObject().putObject("term").putObject("companies").put("value", criteria.company());
+            ObjectNode companyTerm = filter.addObject().putObject("term").putObject("companies");
+            companyTerm.put("value", criteria.company());
+            companyTerm.put("case_insensitive", true);
         }
 
         mustNot.addObject().putObject("match_phrase").putObject("title").put("query", "skip to main content");

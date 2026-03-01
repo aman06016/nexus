@@ -2,6 +2,7 @@ package com.nexusai.modules.article.application;
 
 import com.nexusai.common.domain.ResourceNotFoundException;
 import com.nexusai.modules.article.domain.Article;
+import com.nexusai.modules.article.domain.ArticleStats;
 import com.nexusai.modules.article.infrastructure.ArticleRepository;
 import com.nexusai.modules.interaction.domain.Interaction;
 import com.nexusai.modules.interaction.domain.InteractionType;
@@ -38,6 +39,26 @@ public class ArticleService {
     public Flux<Article> getTrending(int page, int limit) {
         return articleRepository.findByStatusOrderByImpactScoreDescPublishedAtDesc("PUBLISHED", PageRequest.of(page, limit))
             .filter(articleQualityFilter::isDisplayable);
+    }
+
+    public Flux<Article> getDigest(int limit) {
+        int safeLimit = Math.max(limit, 1);
+        return articleRepository.findByStatusOrderByPublishedAtDesc("PUBLISHED", PageRequest.of(0, 200))
+            .collectList()
+            .flatMapMany(articles -> {
+                Instant now = Instant.now();
+                List<Article> ranked = new ArrayList<>(
+                    articles.stream()
+                        .filter(articleQualityFilter::isDisplayable)
+                        .toList()
+                );
+
+                ranked.sort(Comparator.comparingDouble(article -> -digestScore(article, now)));
+                if (ranked.size() > safeLimit) {
+                    ranked = ranked.subList(0, safeLimit);
+                }
+                return Flux.fromIterable(ranked);
+            });
     }
 
     public Mono<Article> getById(String id) {
@@ -191,6 +212,19 @@ public class ArticleService {
 
         if (interactedArticleIds.contains(article.getId())) {
             score -= 20;
+        }
+
+        return score;
+    }
+
+    private double digestScore(Article article, Instant now) {
+        double score = article.getImpactScore() != null ? article.getImpactScore() : 0;
+        ArticleStats stats = article.getStats() == null ? new ArticleStats() : article.getStats();
+        score += stats.getLikes() * 2.0 + stats.getSaves() * 2.8 + stats.getViews() * 0.2 + stats.getShares() * 2.4;
+
+        if (article.getPublishedAt() != null) {
+            double ageHours = Math.max(Duration.between(article.getPublishedAt(), now).toMinutes(), 0) / 60.0;
+            score += Math.max(0, 48 - ageHours) * 0.6;
         }
 
         return score;
