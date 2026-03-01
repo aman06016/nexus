@@ -9,6 +9,16 @@ spring:
       port: ${REDIS_PORT:6379}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    listener:
+      missing-topics-fatal: false
+    consumer:
+      auto-offset-reset: earliest
+      group-id: nexus-backend
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   jackson:
     default-property-inclusion: non_null
 
@@ -22,7 +32,22 @@ management:
         include: health,info,metrics,prometheus
 
 nexus:
+  kafka:
+    topics:
+      raw-articles: ${TOPIC_RAW_ARTICLES:scraper.raw-articles}
+      breaking-news: ${TOPIC_BREAKING_NEWS:ingestion.breaking-news}
+  search:
+    elastic-url: ${ELASTICSEARCH_URL:http://localhost:9200}
+    index-name: ${ELASTICSEARCH_INDEX:articles_v1}
+    bootstrap-reindex-limit: ${ELASTICSEARCH_BOOTSTRAP_REINDEX_LIMIT:500}
   scrape:
     fixed-delay-ms: ${SCRAPE_FIXED_DELAY_MS:120000}
+    playwright-enabled: ${SCRAPE_PLAYWRIGHT_ENABLED:false}
+    connect-timeout-ms: ${SCRAPE_CONNECT_TIMEOUT_MS:12000}
+    read-timeout-ms: ${SCRAPE_READ_TIMEOUT_MS:18000}
+    max-links-per-source: ${SCRAPE_MAX_LINKS_PER_SOURCE:8}
+    min-content-length-for-jsoup: ${SCRAPE_MIN_CONTENT_LENGTH_FOR_JSOUP:1000}
   websocket:
     allowed-origins: ${WS_ALLOWED_ORIGINS:http://localhost:3000}
+  trending:
+    recompute-delay-ms: ${TRENDING_RECOMPUTE_DELAY_MS:300000}

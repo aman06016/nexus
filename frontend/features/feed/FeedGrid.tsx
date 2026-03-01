@@ -1,3 +1,5 @@
+"use client";
+
 import { Article } from "@/lib/api/client";
 import { ArticleCard } from "@/components/ArticleCard";
 
