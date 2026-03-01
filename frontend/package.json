@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "test:smoke": "node scripts/ui-action-smoke.mjs"
+    "test:smoke": "node scripts/ui-action-smoke.mjs",
+    "test:click-smoke": "node scripts/ui-click-smoke.mjs"
   },
   "dependencies": {
     "next": "14.2.25",

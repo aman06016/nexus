@@ -5,6 +5,8 @@ import { fetchTrending } from "@/lib/api/client";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { formatRelativeTime, formatUtcDateTime } from "@/lib/format/date";
 import { emitActivityEvent } from "@/lib/collaboration/activity";
+import { ContextualEmptyState } from "@/components/empty/ContextualEmptyState";
+import { toUserSafeErrorMessage } from "@/lib/errors/userMessage";
 import {
   AlertDeliveryMode,
   createIncidentRule,
@@ -40,6 +42,39 @@ const DEFAULT_DRAFT: RuleDraft = {
   mode: "both"
 };
 
+type RuleValidation = {
+  topic?: string;
+  sourceDomain?: string;
+  minImpact?: string;
+};
+
+function isValidDomain(value: string): boolean {
+  if (!value.trim()) {
+    return true;
+  }
+  return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(value.trim());
+}
+
+function validateDraft(draft: RuleDraft): RuleValidation {
+  const errors: RuleValidation = {};
+
+  if (!draft.topic.trim()) {
+    errors.topic = "Topic is required.";
+  } else if (draft.topic.trim().length < 3) {
+    errors.topic = "Topic should be at least 3 characters.";
+  }
+
+  if (!isValidDomain(draft.sourceDomain)) {
+    errors.sourceDomain = "Use a valid domain such as example.com.";
+  }
+
+  if (!Number.isFinite(draft.minImpact) || draft.minImpact < 0 || draft.minImpact > 100) {
+    errors.minImpact = "Min impact must be between 0 and 100.";
+  }
+
+  return errors;
+}
+
 export function RadarWorkbench() {
   const { notify } = useToast();
   const [draft, setDraft] = useState<RuleDraft>(DEFAULT_DRAFT);
@@ -48,6 +83,10 @@ export function RadarWorkbench() {
   const [lastDigestAt, setLastDigestState] = useState<string | null>(null);
   const [previewCount, setPreviewCount] = useState<number | null>(null);
   const [previewBusy, setPreviewBusy] = useState(false);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [runNowBusy, setRunNowBusy] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [validation, setValidation] = useState<RuleValidation>({});
 
   const refreshState = () => {
     setRules(getIncidentRules());
@@ -64,31 +103,45 @@ export function RadarWorkbench() {
 
   const createRule = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const nextValidation = validateDraft(draft);
+    setValidation(nextValidation);
 
-    if (!draft.topic.trim()) {
-      notify("Topic is required", "error");
+    if (Object.keys(nextValidation).length > 0) {
+      notify("Please fix validation errors before saving.", "error");
       return;
     }
 
-    createIncidentRule({
-      name: draft.name,
-      topic: draft.topic,
-      company: draft.company,
-      sourceDomain: draft.sourceDomain,
-      minImpact: draft.minImpact,
-      mode: draft.mode
-    });
-    setDraft((current) => ({
-      ...DEFAULT_DRAFT,
-      topic: current.topic
-    }));
-    notify("Alert rule created", "success");
-    emitActivityEvent("workspace-update", "Incident radar rule created");
-    refreshState();
+    setSaveBusy(true);
+    setStatusMessage(null);
+    try {
+      createIncidentRule({
+        name: draft.name,
+        topic: draft.topic,
+        company: draft.company,
+        sourceDomain: draft.sourceDomain,
+        minImpact: Math.max(0, Math.min(100, Math.round(draft.minImpact))),
+        mode: draft.mode
+      });
+      setDraft((current) => ({
+        ...DEFAULT_DRAFT,
+        topic: current.topic
+      }));
+      setStatusMessage("Rule saved. Monitoring started.");
+      notify("Alert rule created", "success");
+      emitActivityEvent("workspace-update", "Incident radar rule created");
+      refreshState();
+    } catch (error) {
+      const message = toUserSafeErrorMessage(error, "Unable to save rule right now.");
+      setStatusMessage(message);
+      notify(message, "error");
+    } finally {
+      setSaveBusy(false);
+    }
   };
 
   const runPreview = async () => {
     setPreviewBusy(true);
+    setStatusMessage(null);
     try {
       const previewRules = getIncidentRules().filter((rule) => rule.enabled);
       if (previewRules.length === 0) {
@@ -100,14 +153,24 @@ export function RadarWorkbench() {
       const matches = evaluateIncidentRules(previewRules, articles);
       setPreviewCount(matches.length);
       notify(`Preview scan found ${matches.length} matches`, matches.length > 0 ? "success" : "info");
+      setStatusMessage(`Preview complete: ${matches.length} match${matches.length === 1 ? "" : "es"} found.`);
+    } catch (error) {
+      const message = toUserSafeErrorMessage(error, "Unable to run preview scan.");
+      setStatusMessage(message);
+      notify(message, "error");
     } finally {
       setPreviewBusy(false);
     }
   };
 
-  const runNow = () => {
+  const runNow = async () => {
+    setRunNowBusy(true);
+    setStatusMessage(null);
     window.dispatchEvent(new CustomEvent(MANUAL_SCAN_EVENT));
     notify("Incident scan triggered", "info");
+    setStatusMessage("Scan request queued. New alerts will appear when matching stories arrive.");
+    await new Promise((resolve) => window.setTimeout(resolve, 700));
+    setRunNowBusy(false);
   };
 
   return (
@@ -133,6 +196,10 @@ export function RadarWorkbench() {
             </span>
           ) : null}
         </div>
+        <p aria-live="polite" className="sr-only">
+          {statusMessage ?? ""}
+        </p>
+        {statusMessage ? <p className="mt-2 text-xs text-textSecondary">{statusMessage}</p> : null}
       </div>
 
       <section className="rounded-card border border-borderSoft bg-bgSecondary p-6">
@@ -146,10 +213,17 @@ export function RadarWorkbench() {
           />
           <input
             value={draft.topic}
-            onChange={(event) => setDraft((current) => ({ ...current, topic: event.target.value }))}
+            onChange={(event) => {
+              setDraft((current) => ({ ...current, topic: event.target.value }));
+              setValidation((current) => ({ ...current, topic: undefined }));
+            }}
             placeholder="Topic keyword (required)"
-            className="min-h-10 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm outline-none ring-accentPrimary transition focus:ring"
+            aria-invalid={Boolean(validation.topic)}
+            className={`min-h-11 rounded-md border bg-bgTertiary px-3 py-2 text-sm outline-none ring-accentPrimary transition focus:ring ${
+              validation.topic ? "border-accentDanger" : "border-borderSoft"
+            }`}
           />
+          {validation.topic ? <p className="text-xs text-accentDanger">{validation.topic}</p> : null}
           <input
             value={draft.company}
             onChange={(event) => setDraft((current) => ({ ...current, company: event.target.value }))}
@@ -158,26 +232,42 @@ export function RadarWorkbench() {
           />
           <input
             value={draft.sourceDomain}
-            onChange={(event) => setDraft((current) => ({ ...current, sourceDomain: event.target.value }))}
+            onChange={(event) => {
+              setDraft((current) => ({ ...current, sourceDomain: event.target.value }));
+              setValidation((current) => ({ ...current, sourceDomain: undefined }));
+            }}
             placeholder="Source domain (optional)"
-            className="min-h-10 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm outline-none ring-accentPrimary transition focus:ring"
+            aria-invalid={Boolean(validation.sourceDomain)}
+            className={`min-h-11 rounded-md border bg-bgTertiary px-3 py-2 text-sm outline-none ring-accentPrimary transition focus:ring ${
+              validation.sourceDomain ? "border-accentDanger" : "border-borderSoft"
+            }`}
           />
+          {validation.sourceDomain ? (
+            <p className="text-xs text-accentDanger">{validation.sourceDomain}</p>
+          ) : (
+            <p className="text-xs text-textTertiary">Optional. Example: anthropic.com</p>
+          )}
           <div className="grid grid-cols-[1fr_auto] items-center gap-2">
             <input
               type="number"
               min={0}
               max={100}
               value={draft.minImpact}
-              onChange={(event) =>
+              onChange={(event) => {
                 setDraft((current) => ({
                   ...current,
                   minImpact: Number.isFinite(Number(event.target.value)) ? Number(event.target.value) : 0
-                }))
-              }
-              className="min-h-10 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm outline-none ring-accentPrimary transition focus:ring"
+                }));
+                setValidation((current) => ({ ...current, minImpact: undefined }));
+              }}
+              aria-invalid={Boolean(validation.minImpact)}
+              className={`min-h-11 rounded-md border bg-bgTertiary px-3 py-2 text-sm outline-none ring-accentPrimary transition focus:ring ${
+                validation.minImpact ? "border-accentDanger" : "border-borderSoft"
+              }`}
             />
             <span className="text-xs text-textSecondary">Min impact</span>
           </div>
+          {validation.minImpact ? <p className="text-xs text-accentDanger">{validation.minImpact}</p> : null}
           <select
             value={draft.mode}
             onChange={(event) => setDraft((current) => ({ ...current, mode: event.target.value as AlertDeliveryMode }))}
@@ -190,16 +280,18 @@ export function RadarWorkbench() {
           <div className="md:col-span-2 flex flex-wrap gap-2">
             <button
               type="submit"
-              className="motion-press min-h-10 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary"
+              disabled={saveBusy}
+              className="motion-press min-h-11 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary disabled:opacity-60"
             >
-              Save Rule
+              {saveBusy ? "Saving Rule..." : "Save Rule"}
             </button>
             <button
               type="button"
+              disabled={runNowBusy}
               onClick={runNow}
-              className="motion-press min-h-10 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary"
+              className="motion-press min-h-11 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary disabled:opacity-60"
             >
-              Run Scan Now
+              {runNowBusy ? "Running Scan..." : "Run Scan Now"}
             </button>
             <button
               type="button"
@@ -242,7 +334,15 @@ export function RadarWorkbench() {
         <h2 className="text-lg font-semibold">Active Rules</h2>
         <div className="mt-3 space-y-2">
           {rules.length === 0 ? (
-            <p className="text-sm text-textSecondary">No rules configured yet.</p>
+            <ContextualEmptyState
+              title="No active rules yet"
+              description="Create your first rule to start proactive monitoring."
+              guidance={[
+                "Use a template to prefill topic and threshold.",
+                "Set mode to Realtime + Digest for both immediate and periodic coverage."
+              ]}
+              actions={[{ href: "/radar", label: "Create First Rule Above" }]}
+            />
           ) : (
             rules.map((rule) => (
               <div key={rule.id} className="rounded-md border border-borderSoft bg-bgTertiary/70 p-3">
@@ -297,7 +397,18 @@ export function RadarWorkbench() {
         <h2 className="text-lg font-semibold">Recent Incident Alerts</h2>
         <div className="mt-3 space-y-2">
           {alerts.length === 0 ? (
-            <p className="text-sm text-textSecondary">No incident alerts yet.</p>
+            <ContextualEmptyState
+              title="No incident alerts yet"
+              description="Alerts will appear here when live stories match your active rules."
+              guidance={[
+                "Run Scan Now to trigger an immediate evaluation.",
+                "Lower minimum impact slightly if your topic is too narrow."
+              ]}
+              actions={[
+                { href: "/trending", label: "Inspect Trending Topics" },
+                { href: "/radar", label: "Adjust Rules Above" }
+              ]}
+            />
           ) : (
             alerts.map((alert) => (
               <article key={alert.id} className="rounded-md border border-borderSoft bg-bgTertiary/70 p-3">

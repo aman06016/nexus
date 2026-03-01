@@ -1,6 +1,6 @@
 import { Article } from "@/lib/api/client";
 
-export type BehaviorAction = "read" | "like" | "save";
+export type BehaviorAction = "read" | "like" | "save" | "skip";
 export type SignalNodeType = "source" | "category" | "topic" | "article";
 
 type BehaviorEvent = {
@@ -103,7 +103,8 @@ const STOP_WORDS = new Set([
 const ACTION_WEIGHTS: Record<BehaviorAction, number> = {
   read: 1.1,
   like: 2.2,
-  save: 3.2
+  save: 3.2,
+  skip: -1.8
 };
 
 function normalizeToken(value?: string | null): string {
@@ -137,7 +138,7 @@ function parseEvents(raw: string | null): BehaviorEvent[] {
         typeof item.source === "string" &&
         typeof item.category === "string" &&
         Array.isArray(item.topics) &&
-        (item.action === "read" || item.action === "like" || item.action === "save") &&
+        (item.action === "read" || item.action === "like" || item.action === "save" || item.action === "skip") &&
         typeof item.at === "number"
     );
   } catch {
@@ -519,4 +520,24 @@ export function rankArticlesWithReasons(articles: Article[]): {
 
 export function rankArticlesByBehavior(articles: Article[]): Article[] {
   return rankArticlesWithReasons(articles).ranked;
+}
+
+export function getReadArticleIds(): Set<string> {
+  const ids = new Set<string>();
+  for (const event of readEvents()) {
+    if (event.action === "read" || event.action === "like" || event.action === "save") {
+      ids.add(event.articleId);
+    }
+  }
+  return ids;
+}
+
+export function getSkippedArticleIds(): Set<string> {
+  const ids = new Set<string>();
+  for (const event of readEvents()) {
+    if (event.action === "skip") {
+      ids.add(event.articleId);
+    }
+  }
+  return ids;
 }

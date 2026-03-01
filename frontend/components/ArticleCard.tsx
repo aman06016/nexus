@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Article, toggleLike, toggleSave } from "@/lib/api/client";
 import { getOrCreateSessionId } from "@/lib/session/session";
 import { useToast } from "@/components/feedback/ToastProvider";
@@ -10,6 +10,13 @@ import { emitActivityEvent } from "@/lib/collaboration/activity";
 import { trackBehaviorSignal } from "@/lib/personalization/behavior";
 import { getSourceTrust } from "@/lib/trust/sourceTrust";
 import { WhyItMattersBrief, generateWhyItMattersBrief } from "@/lib/ai/briefing";
+import {
+  getStoryPulse,
+  hasMyReaction,
+  subscribeTeamPulse,
+  TeamReactionType,
+  toggleReaction
+} from "@/lib/collaboration/teamPulse";
 
 type ArticleCardProps = {
   article: Article;
@@ -19,6 +26,10 @@ type ArticleCardProps = {
   revealIndex?: number;
   interactionSessionId?: string;
   rankingReason?: string;
+  compact?: boolean;
+  suppressionActive?: boolean;
+  onSkip?: (articleId: string) => void;
+  teamScopeId?: string;
 };
 
 const META_TOKEN_PATTERN =
@@ -37,6 +48,23 @@ function normalizeHeadline(rawTitle: string): string {
   return withoutMeta || compact;
 }
 
+function sanitizeSnippet(input: string, maxChars: number): string {
+  const normalizedPunctuation = input
+    .replace(/[‘’`]/g, "'")
+    .replace(/[“”]/g, "\"")
+    .replace(/[–—]/g, "-");
+
+  const cleaned = normalizedPunctuation
+    .replace(/\s+/g, " ")
+    .replace(/[^\x20-\x7E]+/g, "")
+    .trim();
+  if (cleaned.length <= maxChars) {
+    return cleaned;
+  }
+
+  return `${cleaned.slice(0, maxChars - 1).trimEnd()}…`;
+}
+
 export function ArticleCard({
   article,
   initialSaveActive = false,
@@ -44,7 +72,11 @@ export function ArticleCard({
   onSaveStateChange,
   revealIndex = 0,
   interactionSessionId,
-  rankingReason
+  rankingReason,
+  compact = false,
+  suppressionActive = false,
+  onSkip,
+  teamScopeId = "global"
 }: ArticleCardProps) {
   const [likes, setLikes] = useState(article.stats?.likes ?? 0);
   const [saves, setSaves] = useState(article.stats?.saves ?? 0);
@@ -55,6 +87,7 @@ export function ArticleCard({
   const [brief, setBrief] = useState<WhyItMattersBrief | null>(null);
   const [briefOpen, setBriefOpen] = useState(false);
   const [briefLoading, setBriefLoading] = useState(false);
+  const [pulseTick, setPulseTick] = useState(0);
   const { notify } = useToast();
 
   const publishedLabel = formatUtcDate(article.publishedAt);
@@ -62,9 +95,36 @@ export function ArticleCard({
   const sourceName = article.source?.name?.trim() || "Unknown source";
   const sourceDomain = article.source?.domain?.trim();
   const sourceTrust = getSourceTrust(sourceDomain);
-  const title = normalizeHeadline(article.title);
+  const title = sanitizeSnippet(normalizeHeadline(article.title), 140);
+  const summaryText = sanitizeSnippet(article.summary ?? "Summary pending ingestion.", 220);
   const titleHref = article.url?.trim() ? article.url : `/search?q=${encodeURIComponent(article.title)}`;
   const opensExternal = !!article.url?.trim();
+  const confidenceScore = Math.min(
+    98,
+    Math.max(
+      45,
+      Math.round(
+        (article.impactScore ?? 0) * 0.55 +
+          (sourceTrust.tone === "high" ? 34 : sourceTrust.tone === "medium" ? 23 : 12) +
+          (article.publishedAt ? 8 : 0)
+      )
+    )
+  );
+  const pulse = useMemo(() => getStoryPulse(teamScopeId, article.id), [teamScopeId, article.id, pulseTick]);
+  const watchActive = useMemo(
+    () => hasMyReaction(teamScopeId, article.id, "watch"),
+    [teamScopeId, article.id, pulseTick]
+  );
+  const debunkActive = useMemo(
+    () => hasMyReaction(teamScopeId, article.id, "debunk"),
+    [teamScopeId, article.id, pulseTick]
+  );
+  const escalateActive = useMemo(
+    () => hasMyReaction(teamScopeId, article.id, "escalate"),
+    [teamScopeId, article.id, pulseTick]
+  );
+
+  useEffect(() => subscribeTeamPulse(() => setPulseTick((current) => current + 1)), []);
 
   const handleLike = async () => {
     if (!article.id || busy) {
@@ -146,6 +206,39 @@ export function ArticleCard({
     }
   };
 
+  const handleSkip = () => {
+    if (!article.id) {
+      return;
+    }
+    trackBehaviorSignal(article, "skip");
+    onSkip?.(article.id);
+    notify("Removed from autopilot queue", "info");
+  };
+
+  const handleTeamReaction = (reaction: TeamReactionType) => {
+    if (!article.id) {
+      return;
+    }
+    const active = toggleReaction(teamScopeId, article.id, title, reaction);
+    setPulseTick((current) => current + 1);
+    emitActivityEvent(
+      "workspace-update",
+      `Team ${reaction} ${active ? "added" : "removed"} on ${title.slice(0, 64)}`
+    );
+    notify(
+      active ? `Marked ${reaction} for team` : `Removed ${reaction} from team pulse`,
+      "info"
+    );
+  };
+
+  const heatStyle =
+    pulse.heat === "hot"
+      ? "border-accentDanger/50 bg-accentDanger/10 text-accentDanger"
+      : pulse.heat === "warm"
+        ? "border-accentPrimary/50 bg-accentPrimary/10 text-accentPrimary"
+        : "border-borderSoft bg-bgTertiary text-textSecondary";
+  const shiftText = pulse.shift === "up" ? "Consensus rising" : pulse.shift === "down" ? "Consensus softening" : "Consensus stable";
+
   return (
     <article
       className="motion-fade-up motion-lift rounded-card border border-borderSoft bg-bgSecondary/75 p-5 transition hover:shadow-glow"
@@ -173,9 +266,12 @@ export function ArticleCard({
         <time className="text-textSecondary" dateTime={article.publishedAt}>
           {publishedLabel}
         </time>
+        <span className={`rounded-full border px-2 py-0.5 ${heatStyle}`}>
+          Team pulse: {pulse.heat}
+        </span>
       </div>
 
-      <h3 className="line-clamp-2 text-xl font-semibold leading-snug text-textPrimary">
+      <h3 className={`${compact ? "line-clamp-1 text-base" : "line-clamp-2 text-xl"} font-semibold leading-snug text-textPrimary`}>
         <Link
           href={titleHref}
           target={opensExternal ? "_blank" : undefined}
@@ -186,63 +282,138 @@ export function ArticleCard({
           {title}
         </Link>
       </h3>
-      <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-textSecondary">
-        {article.summary ?? "Summary pending ingestion."}
+      <p className={`mt-3 text-sm leading-relaxed text-textSecondary ${compact ? "line-clamp-2" : "line-clamp-3"}`}>
+        {summaryText}
       </p>
-      {rankingReason ? (
-        <p className="mt-3 rounded-md border border-borderSoft bg-bgTertiary/70 px-2.5 py-1.5 text-xs text-textSecondary">
-          Why ranked: {rankingReason}
-        </p>
-      ) : null}
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+        {rankingReason ? (
+          <span className="rounded-full border border-borderSoft bg-bgTertiary px-2.5 py-1 text-textSecondary">
+            Why shown to you: {rankingReason}
+          </span>
+        ) : null}
+        {suppressionActive ? (
+          <span className="rounded-full border border-borderSoft bg-bgTertiary px-2.5 py-1 text-textSecondary">
+            Duplicate and old-content suppression active
+          </span>
+        ) : null}
+        <span className="rounded-full border border-borderSoft bg-bgTertiary px-2.5 py-1 text-textSecondary">
+          {shiftText}
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+        <button
+          type="button"
+          onClick={() => handleTeamReaction("watch")}
+          disabled={!article.id}
+          className={`motion-press rounded-md border px-2.5 py-1 transition disabled:opacity-50 ${
+            watchActive
+              ? "border-accentPrimary/60 bg-accentPrimary/15 text-accentPrimary"
+              : "border-borderSoft bg-bgTertiary text-textSecondary hover:bg-bgPrimary hover:text-textPrimary"
+          }`}
+        >
+          Watch {pulse.watchCount}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTeamReaction("debunk")}
+          disabled={!article.id}
+          className={`motion-press rounded-md border px-2.5 py-1 transition disabled:opacity-50 ${
+            debunkActive
+              ? "border-accentDanger/60 bg-accentDanger/10 text-accentDanger"
+              : "border-borderSoft bg-bgTertiary text-textSecondary hover:bg-bgPrimary hover:text-textPrimary"
+          }`}
+        >
+          Debunk {pulse.debunkCount}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTeamReaction("escalate")}
+          disabled={!article.id}
+          className={`motion-press rounded-md border px-2.5 py-1 transition disabled:opacity-50 ${
+            escalateActive
+              ? "border-accentSuccess/60 bg-accentSuccess/15 text-accentSuccess"
+              : "border-borderSoft bg-bgTertiary text-textSecondary hover:bg-bgPrimary hover:text-textPrimary"
+          }`}
+        >
+          Escalate {pulse.escalateCount}
+        </button>
+      </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-borderSoft bg-bgTertiary px-2.5 py-1 text-xs font-medium text-textSecondary">
             Impact: {article.impactScore ?? 0}
           </span>
-          <button
-            type="button"
-            onClick={handleBriefToggle}
-            disabled={briefLoading}
-            className={`motion-press min-h-8 rounded-full border px-3 py-1 text-xs font-medium transition disabled:opacity-60 ${
-              briefOpen
-                ? "border-accentPrimary/60 bg-accentPrimary/15 text-accentPrimary"
-                : "border-borderSoft bg-bgTertiary text-textSecondary hover:bg-bgPrimary hover:text-textPrimary"
-            }`}
-          >
-            {briefLoading ? "Generating..." : briefOpen ? "Hide Brief" : "Why It Matters"}
-          </button>
+          <span className="rounded-full border border-borderSoft bg-bgTertiary px-2.5 py-1 text-xs font-medium text-textSecondary">
+            Confidence: {confidenceScore}%
+          </span>
+          {!compact ? (
+            <button
+              type="button"
+              onClick={handleBriefToggle}
+              disabled={briefLoading}
+              className={`motion-press min-h-8 rounded-full border px-3 py-1 text-xs font-medium transition disabled:opacity-60 ${
+                briefOpen
+                  ? "border-accentPrimary/60 bg-accentPrimary/15 text-accentPrimary"
+                  : "border-borderSoft bg-bgTertiary text-textSecondary hover:bg-bgPrimary hover:text-textPrimary"
+              }`}
+            >
+              {briefLoading ? "Generating..." : briefOpen ? "Hide Brief" : "Why It Matters"}
+            </button>
+          ) : null}
         </div>
-        <div className="flex items-center gap-2 text-sm text-textSecondary">
-          <button
-            type="button"
-            aria-pressed={likeActive}
-            disabled={busy !== null}
-            onClick={handleLike}
-            className={`motion-press min-h-9 rounded-md border px-3 py-2 font-medium transition disabled:opacity-60 ${
-              likeActive
-                ? "border-accentPrimary/60 bg-accentPrimary/20 text-accentPrimary"
-                : "border-borderSoft bg-bgTertiary hover:bg-bgPrimary hover:text-textPrimary"
-            }`}
-          >
-            {busy === "like" ? "Updating..." : likeActive ? "Liked" : "Like"} {likes}
-          </button>
-          <button
-            type="button"
-            aria-pressed={saveActive}
-            disabled={busy !== null}
-            onClick={handleSave}
-            className={`motion-press min-h-9 rounded-md border px-3 py-2 font-medium transition disabled:opacity-60 ${
-              saveActive
-                ? "border-accentSecondary/60 bg-accentSecondary/20 text-accentSecondary"
-                : "border-borderSoft bg-bgTertiary hover:bg-bgPrimary hover:text-textPrimary"
-            }`}
-          >
-            {busy === "save" ? "Updating..." : saveActive ? "Saved" : "Save"} {saves}
-          </button>
-        </div>
+        {compact ? (
+          <div className="flex items-center gap-2">
+            <Link
+              href={titleHref}
+              target={opensExternal ? "_blank" : undefined}
+              rel={opensExternal ? "noreferrer noopener" : undefined}
+              onClick={() => trackBehaviorSignal(article, "read")}
+              className="motion-press min-h-9 rounded-md border border-accentPrimary/60 bg-accentPrimary/15 px-3 py-2 text-sm font-medium text-accentPrimary transition hover:bg-accentPrimary/20"
+            >
+              Open Story
+            </Link>
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="motion-press min-h-9 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary"
+            >
+              Skip
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-textSecondary">
+            <button
+              type="button"
+              aria-pressed={likeActive}
+              disabled={busy !== null}
+              onClick={handleLike}
+              className={`motion-press min-h-9 rounded-md border px-3 py-2 font-medium transition disabled:opacity-60 ${
+                likeActive
+                  ? "border-accentPrimary/60 bg-accentPrimary/20 text-accentPrimary"
+                  : "border-borderSoft bg-bgTertiary hover:bg-bgPrimary hover:text-textPrimary"
+              }`}
+            >
+              {busy === "like" ? "Updating..." : likeActive ? "Liked" : "Like"} {likes}
+            </button>
+            <button
+              type="button"
+              aria-pressed={saveActive}
+              disabled={busy !== null}
+              onClick={handleSave}
+              className={`motion-press min-h-9 rounded-md border px-3 py-2 font-medium transition disabled:opacity-60 ${
+                saveActive
+                  ? "border-accentSecondary/60 bg-accentSecondary/20 text-accentSecondary"
+                  : "border-borderSoft bg-bgTertiary hover:bg-bgPrimary hover:text-textPrimary"
+              }`}
+            >
+              {busy === "save" ? "Updating..." : saveActive ? "Saved" : "Save"} {saves}
+            </button>
+          </div>
+        )}
       </div>
-      {briefOpen ? (
+      {!compact && briefOpen ? (
         <section className="mt-4 rounded-md border border-borderSoft bg-bgTertiary/70 p-3">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <h4 className="text-sm font-semibold text-textPrimary">Why It Matters</h4>

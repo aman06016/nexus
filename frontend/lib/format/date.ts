@@ -1,18 +1,19 @@
-const DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
-  day: "2-digit",
-  month: "2-digit",
+const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
   year: "numeric",
   timeZone: "UTC"
 });
 
-const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-GB", {
-  day: "2-digit",
-  month: "2-digit",
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
   year: "numeric",
   hour: "2-digit",
   minute: "2-digit",
   second: "2-digit",
   hour12: false,
+  timeZoneName: "short",
   timeZone: "UTC"
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { emitActivityEvent } from "@/lib/collaboration/activity";
@@ -20,6 +20,8 @@ export function SearchFiltersForm({ initialQuery, initialCategory, initialCompan
   const [showAdvanced, setShowAdvanced] = useState(
     initialCategory.trim().length > 0 || initialCompany.trim().length > 0
   );
+  const [isPending, startTransition] = useTransition();
+  const [statusMessage, setStatusMessage] = useState<string>("");
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -37,6 +39,7 @@ export function SearchFiltersForm({ initialQuery, initialCategory, initialCompan
 
     if (!trimmedQuery && !trimmedCategory && !trimmedCompany) {
       notify("Enter at least one search value", "error");
+      setStatusMessage("Search validation failed. Enter at least one value.");
       return;
     }
 
@@ -51,16 +54,24 @@ export function SearchFiltersForm({ initialQuery, initialCategory, initialCompan
       params.set("company", trimmedCompany);
     }
 
-    router.push(`/search?${params.toString()}`);
-    emitActivityEvent("workspace-update", "Search filters applied");
+    setStatusMessage("Applying filters...");
+    startTransition(() => {
+      router.push(`/search?${params.toString()}`);
+      emitActivityEvent("workspace-update", "Search filters applied");
+      setStatusMessage("Filters applied.");
+    });
   };
 
   const onReset = () => {
     setQuery("");
     setCategory("");
     setCompany("");
-    router.push("/search");
-    emitActivityEvent("workspace-update", "Search filters reset");
+    setStatusMessage("Resetting search filters...");
+    startTransition(() => {
+      router.push("/search");
+      emitActivityEvent("workspace-update", "Search filters reset");
+      setStatusMessage("Filters reset.");
+    });
   };
 
   const hasValues = query.trim().length > 0 || category.trim().length > 0 || company.trim().length > 0;
@@ -69,6 +80,9 @@ export function SearchFiltersForm({ initialQuery, initialCategory, initialCompan
 
   return (
     <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+      <p aria-live="polite" className="sr-only">
+        {statusMessage}
+      </p>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input
           name="q"
@@ -79,14 +93,15 @@ export function SearchFiltersForm({ initialQuery, initialCategory, initialCompan
         />
         <button
           type="submit"
-          className="motion-press min-h-10 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary"
+          disabled={isPending}
+          className="motion-press min-h-11 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary disabled:opacity-60"
         >
-          Apply Filters
+          {isPending ? "Applying..." : "Apply Filters"}
         </button>
         <button
           type="button"
           onClick={() => setShowAdvanced((current) => !current)}
-          className="motion-press min-h-10 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary"
+          className="motion-press min-h-11 rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary"
           aria-expanded={showAdvanced}
           aria-controls="advanced-search-filters"
         >
@@ -125,7 +140,7 @@ export function SearchFiltersForm({ initialQuery, initialCategory, initialCompan
               type="button"
               disabled={!hasValues}
               onClick={onReset}
-              className="motion-press min-h-10 rounded-md border border-borderSoft bg-bgPrimary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgSecondary hover:text-textPrimary disabled:opacity-60"
+              className="motion-press min-h-11 rounded-md border border-borderSoft bg-bgPrimary px-3 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgSecondary hover:text-textPrimary disabled:opacity-60"
             >
               Reset All
             </button>

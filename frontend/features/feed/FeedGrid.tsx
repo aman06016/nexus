@@ -8,11 +8,27 @@ import { getOrCreateSessionId } from "@/lib/session/session";
 type FeedGridProps = {
   articles: Article[];
   rankingReasons?: Record<string, string>;
+  compactCards?: boolean;
+  suppressionActive?: boolean;
 };
 
-export function FeedGrid({ articles, rankingReasons }: FeedGridProps) {
+export function FeedGrid({
+  articles,
+  rankingReasons,
+  compactCards = false,
+  suppressionActive = false
+}: FeedGridProps) {
   const [stateMap, setStateMap] = useState<Record<string, InteractionState>>({});
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   const articleIds = useMemo(() => articles.map((article) => article.id).filter(Boolean), [articles]);
+  const visibleArticles = useMemo(
+    () => articles.filter((article) => !hiddenIds.has(article.id)),
+    [articles, hiddenIds]
+  );
+
+  useEffect(() => {
+    setHiddenIds(new Set());
+  }, [articles]);
 
   useEffect(() => {
     let canceled = false;
@@ -42,7 +58,7 @@ export function FeedGrid({ articles, rankingReasons }: FeedGridProps) {
 
   return (
     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {articles.map((article, index) => (
+      {visibleArticles.map((article, index) => (
         <ArticleCard
           key={article.id}
           article={article}
@@ -50,6 +66,15 @@ export function FeedGrid({ articles, rankingReasons }: FeedGridProps) {
           initialLikeActive={stateMap[article.id]?.liked ?? false}
           revealIndex={index}
           rankingReason={rankingReasons?.[article.id]}
+          compact={compactCards}
+          suppressionActive={suppressionActive}
+          onSkip={(articleId) =>
+            setHiddenIds((current) => {
+              const next = new Set(current);
+              next.add(articleId);
+              return next;
+            })
+          }
         />
       ))}
     </div>

@@ -3,7 +3,11 @@ import Link from "next/link";
 import { DiscoveryAssistant } from "@/components/discovery/DiscoveryAssistant";
 import { ContextualEmptyState } from "@/components/empty/ContextualEmptyState";
 import { AdaptiveFeedSection } from "@/components/personalization/AdaptiveFeedSection";
+import { PreferenceOnboarding } from "@/components/personalization/PreferenceOnboarding";
+import { MyBriefRail } from "@/components/personalization/MyBriefRail";
 import { TrustSignals } from "@/components/trust/TrustSignals";
+import { ShockwaveAlertsPanel } from "@/components/radar/ShockwaveAlertsPanel";
+import { TeamPulseRail } from "@/components/collaboration/TeamPulseRail";
 
 export default async function HomePage() {
   const [articles, overview] = await Promise.all([
@@ -52,6 +56,7 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+      <PreferenceOnboarding />
       <TrustSignals
         monitoredSources={
           overview?.totalSources ??
@@ -68,6 +73,7 @@ export default async function HomePage() {
         publishedStories={overview?.publishedArticles ?? articles.length}
         updatedAt={overview?.timestamp}
       />
+      <ShockwaveAlertsPanel />
       {articles.length === 0 ? (
         <ContextualEmptyState
           title="No stories available right now"
@@ -82,10 +88,20 @@ export default async function HomePage() {
           ]}
         />
       ) : (
-        <>
-          <DiscoveryAssistant articles={articles} scopeLabel="the latest feed" />
-          <AdaptiveFeedSection articles={articles} includePersonalizedEndpoint />
-        </>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="space-y-6">
+            <DiscoveryAssistant articles={articles} scopeLabel="the latest feed" />
+            <AdaptiveFeedSection
+              articles={articles}
+              includePersonalizedEndpoint
+              strictQualityMode
+            />
+          </div>
+          <div className="space-y-6">
+            <TeamPulseRail />
+            <MyBriefRail articles={articles} />
+          </div>
+        </div>
       )}
     </section>
   );

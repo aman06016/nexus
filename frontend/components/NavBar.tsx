@@ -21,8 +21,7 @@ const links = [
   { href: "/trending", label: "Trending", shortcut: "Alt+2" },
   { href: "/saved", label: "Saved", shortcut: "Alt+3" },
   { href: "/digest", label: "Digest", shortcut: "Alt+4" },
-  { href: "/radar", label: "Radar", shortcut: "Alt+5" },
-  { href: "/admin", label: "Admin", shortcut: "Alt+6" }
+  { href: "/radar", label: "Radar", shortcut: "Alt+5" }
 ] as const;
 
 type CommandGroupId = "navigation" | "search" | "theme" | "actions";
@@ -81,7 +80,6 @@ export function NavBar() {
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [isCondensed, setIsCondensed] = useState(false);
-  const [showQuickActions, setShowQuickActions] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const paletteTriggerRef = useRef<HTMLButtonElement>(null);
   const palettePanelRef = useRef<HTMLDivElement>(null);
@@ -151,7 +149,6 @@ export function NavBar() {
 
       setScrollProgress(progress);
       setIsCondensed(y > 26);
-      setShowQuickActions(y > 420 && y >= lastScrollYRef.current);
       lastScrollYRef.current = y;
     };
 
@@ -183,7 +180,7 @@ export function NavBar() {
         !paletteOpen &&
         event.altKey &&
         !isTypingTarget(event.target) &&
-        ["1", "2", "3", "4", "5", "6"].includes(event.key)
+        ["1", "2", "3", "4", "5"].includes(event.key)
       ) {
         event.preventDefault();
         const destination = links[Number(event.key) - 1];
@@ -447,10 +444,21 @@ export function NavBar() {
       return;
     }
 
-    if (event.key === "Enter" && activeCommandIndex >= 0) {
-      event.preventDefault();
-      executeCommand(activeCommandIndex);
-      return;
+    if (event.key === "Enter") {
+      if (activeCommandIndex >= 0) {
+        event.preventDefault();
+        executeCommand(activeCommandIndex);
+        return;
+      }
+
+      if (paletteQuery.trim()) {
+        event.preventDefault();
+        setPaletteQuery("");
+        setActiveCommandIndex(0);
+        notify("No matches found. Showing all commands.", "info");
+        window.requestAnimationFrame(() => paletteInputRef.current?.focus());
+        return;
+      }
     }
 
     if (event.key === "Tab") {
@@ -531,7 +539,7 @@ export function NavBar() {
         </div>
 
         <form
-          className={`ml-auto flex w-full items-center gap-2 transition ${
+          className={`ml-auto flex w-full flex-wrap items-center gap-2 transition md:flex-nowrap ${
             isCondensed ? "max-w-2xl" : "max-w-xl"
           }`}
           onSubmit={handleSearchSubmit}
@@ -580,43 +588,6 @@ export function NavBar() {
         </form>
       </div>
 
-      {showQuickActions ? (
-        <div className="border-t border-borderSoft/70 bg-bgPrimary/80">
-          <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-2 text-xs">
-            <span className="text-textSecondary">Deep feed mode</span>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                  emitActivityEvent("workspace-update", "Returned to top of feed");
-                }}
-                className="motion-press rounded border border-borderSoft bg-bgSecondary px-2 py-1 text-textSecondary transition hover:bg-bgTertiary hover:text-textPrimary"
-              >
-                Back to top
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  router.refresh();
-                  emitActivityEvent("page-refresh", "Manual refresh from smart nav");
-                }}
-                className="motion-press rounded border border-borderSoft bg-bgSecondary px-2 py-1 text-textSecondary transition hover:bg-bgTertiary hover:text-textPrimary"
-              >
-                Refresh feed
-              </button>
-              <button
-                type="button"
-                onClick={openPalette}
-                className="motion-press rounded border border-borderSoft bg-bgSecondary px-2 py-1 text-textSecondary transition hover:bg-bgTertiary hover:text-textPrimary"
-              >
-                Cmd/Ctrl+K
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <div className="h-[2px] w-full bg-bgTertiary/70">
         <div
           className="h-full bg-accentPrimary transition-[width] duration-150"
@@ -658,13 +629,41 @@ export function NavBar() {
                   placeholder="Type a command, page, or action..."
                   className="w-full rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm outline-none ring-accentPrimary transition focus:ring"
                 />
+                <p className="mt-1 text-[11px] text-textTertiary">
+                  Enter runs selected command. If no match, Enter clears query.
+                </p>
 
                 <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_260px]">
                   <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                     {groupedCommands.length === 0 ? (
-                      <p className="rounded-md border border-borderSoft bg-bgTertiary px-3 py-2 text-sm text-textSecondary">
-                        No matching commands.
-                      </p>
+                      <div className="space-y-2 rounded-md border border-borderSoft bg-bgTertiary px-3 py-3 text-sm text-textSecondary">
+                        <p>No matching commands for &quot;{paletteQuery}&quot;.</p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaletteQuery("");
+                              setActiveCommandIndex(0);
+                              window.requestAnimationFrame(() => paletteInputRef.current?.focus());
+                            }}
+                            className="motion-press rounded border border-borderSoft bg-bgPrimary px-2 py-1 text-xs text-textSecondary transition hover:text-textPrimary"
+                          >
+                            Clear Query
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaletteQuery("");
+                              setActiveCommandIndex(0);
+                              notify("Showing all commands", "info");
+                            }}
+                            className="motion-press rounded border border-borderSoft bg-bgPrimary px-2 py-1 text-xs text-textSecondary transition hover:text-textPrimary"
+                          >
+                            Show All Commands
+                          </button>
+                        </div>
+                        <p className="text-xs text-textTertiary">Press Enter to clear and recover.</p>
+                      </div>
                     ) : (
                       groupedCommands.map((group) => (
                         <section key={group.id} aria-label={group.label} className="space-y-1">

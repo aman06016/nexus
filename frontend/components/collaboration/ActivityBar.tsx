@@ -53,7 +53,7 @@ export function ActivityBar({ scopeId = "global", scopeLabel = "Global Workspace
   }, [lastEvent, relativeNow]);
 
   return (
-    <div className="border-b border-borderSoft bg-bgPrimary/70 px-4 py-2 text-xs text-textSecondary">
+    <div className="pointer-events-none border-b border-borderSoft bg-bgPrimary/70 px-4 py-2 text-xs text-textSecondary">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2">
         <span className="rounded-full border border-borderSoft bg-bgSecondary px-2 py-0.5 text-[11px] text-textPrimary">
           {scopeLabel}

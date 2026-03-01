@@ -68,6 +68,20 @@ const EXPANSIONS: Record<string, string[]> = {
   research: ["paper", "analysis"]
 };
 
+const META_CATEGORY_PATTERN = "(?:Announcements|Product|Policy|Research|Model Release)";
+const MONTH_PATTERN =
+  "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
+const DATE_THEN_CATEGORY = new RegExp(`\\b(${MONTH_PATTERN}\\s+\\d{1,2},\\s+\\d{4})\\s*(${META_CATEGORY_PATTERN})\\b`, "gi");
+const CATEGORY_THEN_DATE = new RegExp(`\\b(${META_CATEGORY_PATTERN})\\s*(${MONTH_PATTERN}\\s+\\d{1,2},\\s+\\d{4})\\b`, "gi");
+
+function normalizeInsightTitle(rawTitle: string): string {
+  return rawTitle
+    .replace(DATE_THEN_CATEGORY, "$1 • $2")
+    .replace(CATEGORY_THEN_DATE, "$1 • $2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function normalizeText(input: string): string {
   return input
     .toLowerCase()
@@ -198,7 +212,7 @@ export function buildDiscoveryInsights(articles: Article[], query = "", scopeLab
       const score = impact + engagement + freshness;
       return {
         articleId: article.id,
-        title: article.title,
+        title: normalizeInsightTitle(article.title),
         href: article.url?.trim() ? article.url : `/search?q=${encodeURIComponent(article.title)}`,
         reason: buildReason(article, impact, engagement, freshness),
         score

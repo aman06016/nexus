@@ -13,6 +13,7 @@ import {
 import { formatUtcDateTime } from "@/lib/format/date";
 import { useToast } from "@/components/feedback/ToastProvider";
 import { emitActivityEvent } from "@/lib/collaboration/activity";
+import { toUserSafeErrorMessage } from "@/lib/errors/userMessage";
 
 type ActionState = {
   runningScrape: boolean;
@@ -27,6 +28,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [lastKnownGoodAt, setLastKnownGoodAt] = useState<string | null>(null);
   const [showAdvancedControls, setShowAdvancedControls] = useState(false);
   const [sourceQuery, setSourceQuery] = useState("");
   const [actions, setActions] = useState<ActionState>({
@@ -42,8 +44,9 @@ export default function AdminPage() {
     try {
       const result = await fetchAdminOverview();
       setOverview(result);
+      setLastKnownGoodAt(new Date().toISOString());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load admin overview");
+      setError(toUserSafeErrorMessage(err, "Unable to load admin overview right now."));
     } finally {
       setLoading(false);
     }
@@ -71,7 +74,7 @@ export default function AdminPage() {
       emitActivityEvent("admin-action", "Scrape cycle completed");
       await loadOverview();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to run scrape cycle";
+      const message = toUserSafeErrorMessage(err, "Failed to run scrape cycle.");
       setStatusMessage(message);
       notify(message, "error");
     } finally {
@@ -89,7 +92,7 @@ export default function AdminPage() {
       emitActivityEvent("admin-action", "Trending recompute completed");
       await loadOverview();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to recompute trending";
+      const message = toUserSafeErrorMessage(err, "Failed to recompute trending.");
       setStatusMessage(message);
       notify(message, "error");
     } finally {
@@ -126,7 +129,7 @@ export default function AdminPage() {
       }));
       await loadOverview();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Source update failed";
+      const message = toUserSafeErrorMessage(err, "Source update failed.");
       setStatusMessage(message);
       notify(message, "error");
       setActions((prev) => ({
@@ -167,6 +170,9 @@ export default function AdminPage() {
         </button>
       </div>
 
+      <p aria-live="polite" className="sr-only">
+        {statusMessage ?? ""}
+      </p>
       {statusMessage ? <p className="text-sm text-textSecondary">{statusMessage}</p> : null}
       {error ? <p className="text-sm text-accentDanger">{error}</p> : null}
 
@@ -291,7 +297,21 @@ export default function AdminPage() {
             )}
           </section>
         </>
-      ) : null}
+      ) : (
+        <section className="rounded-card border border-borderSoft bg-bgSecondary p-6">
+          <p className="text-sm text-accentDanger">{error ?? "Unable to load admin data."}</p>
+          <p className="mt-2 text-xs text-textSecondary">
+            Last known good: {formatUtcDateTime(lastKnownGoodAt, "Unavailable")}
+          </p>
+          <button
+            type="button"
+            onClick={loadOverview}
+            className="motion-press mt-3 min-h-11 rounded-md border border-borderSoft bg-bgTertiary px-4 py-2 text-sm font-medium text-textSecondary transition hover:bg-bgPrimary hover:text-textPrimary"
+          >
+            Retry
+          </button>
+        </section>
+      )}
     </section>
   );
 }

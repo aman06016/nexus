@@ -3,6 +3,7 @@ import { fetchSearchResults } from "@/lib/api/client";
 import { SearchFiltersForm } from "@/components/SearchFiltersForm";
 import { DiscoveryAssistant } from "@/components/discovery/DiscoveryAssistant";
 import { ContextualEmptyState } from "@/components/empty/ContextualEmptyState";
+import { filterSearchQuality } from "@/lib/quality/articleQuality";
 
 type SearchPageProps = {
   searchParams?: {
@@ -18,7 +19,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const company = searchParams?.company?.trim() ?? "";
 
   const hasFilters = query.length > 0 || category.length > 0 || company.length > 0;
-  const results = hasFilters
+  const rawResults = hasFilters
     ? await fetchSearchResults(query || "ai", {
         category: category || undefined,
         company: company || undefined,
@@ -26,12 +27,25 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         limit: 20
       }).catch(() => [])
     : [];
+  const quality = filterSearchQuality(rawResults, query || "ai");
+  const results = quality.accepted;
+  const filteredOutCount =
+    quality.rejected.stale +
+    quality.rejected.lowImpact +
+    quality.rejected.lowRelevance +
+    quality.rejected.invalidDate;
 
   return (
     <section className="space-y-6">
       <div className="rounded-card border border-borderSoft bg-bgSecondary p-6">
         <h1 className="text-2xl font-semibold">Search</h1>
         <p className="mt-2 text-textSecondary">Full-text and entity search via Elasticsearch index.</p>
+        {hasFilters ? (
+          <p className="mt-2 text-xs text-textSecondary">
+            Quality guardrails: last 12 months, impact &gt; 0, and query-topic relevance.
+            {filteredOutCount > 0 ? ` Filtered ${filteredOutCount} low-signal result${filteredOutCount === 1 ? "" : "s"}.` : ""}
+          </p>
+        ) : null}
 
         <SearchFiltersForm initialQuery={query} initialCategory={category} initialCompany={company} />
       </div>
@@ -51,10 +65,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         />
       ) : results.length === 0 ? (
         <ContextualEmptyState
-          title="No matching results found"
-          description="Your current filters are too narrow for indexed content."
+          title="No high-signal results found"
+          description={
+            rawResults.length > 0
+              ? "Results were found, but none met freshness, impact, and relevance guardrails."
+              : "Your current filters are too narrow for indexed content."
+          }
           guidance={[
-            "Remove either category or company and retry.",
+            "Try a broader query or remove either category or company.",
+            "If you need historical research, use Trending or Digest and relax filters manually.",
             "Search by a broader theme such as security, policy, or model.",
             "Use Trending to discover active topics, then return to refine."
           ]}

@@ -54,6 +54,19 @@ a {
   text-decoration: none;
 }
 
+button,
+input,
+select,
+textarea,
+a[role="button"] {
+  min-height: 44px !important;
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-primary) 80%, white 20%);
+  outline-offset: 2px;
+}
+
 .motion-lift {
   transition: transform var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease);
 }
